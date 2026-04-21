@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { useAuth } from '../lib/useAuth'
 
 export default function NavBar() {
-  const { isAuthenticated, user, logout } = useAuth()
+  const { isAuthenticated, user, logout, isLoading } = useAuth()
 
   const handleLogout = () => {
     logout()
@@ -16,19 +16,27 @@ export default function NavBar() {
           Proyecto 2
         </Link>
         <div style={styles.rightSection}>
-          {isAuthenticated && user ? (
+          {isLoading ? null : isAuthenticated && user ? (
             <div style={styles.userSection}>
+              <div style={styles.navLinks}>
+                <Link href="/rooms" style={styles.link}>
+                  Habitaciones
+                </Link>
+                <Link href="/profile" style={styles.link}>
+                  Perfil
+                </Link>
+              </div>
               <span style={styles.userInfo}>
                 {user.name} ({user.role})
               </span>
               <button onClick={handleLogout} style={styles.logoutBtn}>
-                Cerrar Sesión
+                Cerrar sesion
               </button>
             </div>
           ) : (
             <div style={styles.authLinks}>
               <Link href="/login" style={styles.link}>
-                Iniciar Sesión
+                Iniciar sesion
               </Link>
               <Link href="/register" style={styles.link}>
                 Registrarse
@@ -43,10 +51,10 @@ export default function NavBar() {
 
 const styles = {
   nav: {
-    backgroundColor: '#333',
+    backgroundColor: '#132a3a',
     color: 'white',
     padding: '1rem 0',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+    boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
   },
   container: {
     maxWidth: '1200px',
@@ -55,9 +63,11 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: '1rem',
+    flexWrap: 'wrap' as const,
   },
   logo: {
-    fontSize: '1.5rem',
+    fontSize: '1.4rem',
     fontWeight: 'bold',
     color: 'white',
     textDecoration: 'none',
@@ -69,29 +79,36 @@ const styles = {
   userSection: {
     display: 'flex',
     alignItems: 'center',
-    gap: '1rem',
+    gap: '0.75rem',
+    flexWrap: 'wrap' as const,
+    justifyContent: 'flex-end' as const,
   },
   userInfo: {
     fontSize: '0.9rem',
   },
+  navLinks: {
+    display: 'flex',
+    gap: '0.5rem',
+    flexWrap: 'wrap' as const,
+  },
   authLinks: {
     display: 'flex',
-    gap: '1rem',
+    gap: '0.5rem',
+    flexWrap: 'wrap' as const,
   },
   link: {
     color: 'white',
     textDecoration: 'none',
-    padding: '0.5rem 1rem',
-    borderRadius: '4px',
-    transition: 'background-color 0.3s',
+    padding: '0.5rem 0.9rem',
+    borderRadius: '999px',
+    backgroundColor: 'rgba(255,255,255,0.08)',
   },
   logoutBtn: {
-    backgroundColor: '#e74c3c',
+    backgroundColor: '#d35f3f',
     color: 'white',
     border: 'none',
-    padding: '0.5rem 1rem',
-    borderRadius: '4px',
+    padding: '0.5rem 0.9rem',
+    borderRadius: '999px',
     cursor: 'pointer',
-    transition: 'background-color 0.3s',
   },
 } as const

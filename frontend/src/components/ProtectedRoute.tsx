@@ -1,4 +1,4 @@
-import { ReactNode } from 'react'
+import { ReactNode, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { useAuth } from '../lib/useAuth'
 
@@ -14,6 +14,12 @@ export default function ProtectedRoute({
   const { isAuthenticated, user, isLoading } = useAuth()
   const router = useRouter()
 
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.replace('/login')
+    }
+  }, [isAuthenticated, isLoading, router])
+
   if (isLoading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -23,15 +29,18 @@ export default function ProtectedRoute({
   }
 
   if (!isAuthenticated) {
-    router.push('/login')
-    return null
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <p>Redirigiendo...</p>
+      </div>
+    )
   }
 
   if (requiredRole && user?.role !== requiredRole) {
     return (
       <div style={{ padding: '2rem', textAlign: 'center' }}>
-        <h1>Acceso Denegado</h1>
-        <p>No tiene permisos para acceder a esta página</p>
+        <h1>Acceso denegado</h1>
+        <p>No tienes permisos para acceder a esta pagina.</p>
       </div>
     )
   }

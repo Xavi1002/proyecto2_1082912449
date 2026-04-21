@@ -2,6 +2,8 @@ import { useAuth } from '../lib/useAuth'
 import ProtectedRoute from '../components/ProtectedRoute'
 import NavBar from '../components/NavBar'
 
+const receptionRole = 'Recepci' + String.fromCharCode(243) + 'n'
+
 function ProfileContent() {
   const { user } = useAuth()
 
@@ -10,8 +12,8 @@ function ProfileContent() {
       <NavBar />
       <div style={styles.container}>
         <div style={styles.card}>
-          <h1>Mi Perfil</h1>
-          {user && (
+          <h1>Mi perfil</h1>
+          {user ? (
             <div style={styles.profileInfo}>
               <div style={styles.infoGroup}>
                 <label>Nombre:</label>
@@ -27,16 +29,18 @@ function ProfileContent() {
               </div>
               <div style={styles.roleDescription}>
                 {user.role === 'SuperAdmin' && (
-                  <p>Tienes acceso total al sistema como administrador</p>
+                  <p>Tienes acceso total al sistema como administrador.</p>
                 )}
-                {user.role === 'Recepción' && (
-                  <p>Tienes acceso como personal de recepción</p>
+                {user.role === receptionRole && (
+                  <p>Tienes acceso como personal de recepcion.</p>
                 )}
                 {user.role === 'Cliente' && (
-                  <p>Tienes acceso como cliente de la plataforma</p>
+                  <p>Tienes acceso como cliente de la plataforma.</p>
                 )}
               </div>
             </div>
+          ) : (
+            <p>Cargando informacion del usuario...</p>
           )}
         </div>
       </div>
@@ -60,9 +64,9 @@ const styles = {
   },
   card: {
     backgroundColor: 'white',
-    borderRadius: '8px',
+    borderRadius: '16px',
     padding: '2rem',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+    boxShadow: '0 18px 45px rgba(18, 38, 63, 0.08)',
   },
   profileInfo: {
     marginTop: '2rem',
@@ -76,8 +80,7 @@ const styles = {
     marginTop: '2rem',
     padding: '1rem',
     backgroundColor: '#e7f3ff',
-    borderRadius: '4px',
+    borderRadius: '12px',
     color: '#0066cc',
-    borderLeft: '4px solid #0066cc',
   },
 } as const

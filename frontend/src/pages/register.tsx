@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import { useAuth } from '../lib/useAuth'
 import NavBar from '../components/NavBar'
+
+const receptionRole = 'Recepci' + String.fromCharCode(243) + 'n'
 
 export default function Register() {
   const [name, setName] = useState('')
@@ -11,44 +13,44 @@ export default function Register() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [role, setRole] = useState('Cliente')
   const [error, setError] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const { register, isAuthenticated } = useAuth()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { register, isAuthenticated, isLoading } = useAuth()
   const router = useRouter()
 
-  if (isAuthenticated) {
-    router.push('/')
-    return null
-  }
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.replace('/')
+    }
+  }, [isAuthenticated, isLoading, router])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault()
     setError('')
 
-    // Validaciones
     if (!name || !email || !password) {
-      setError('Todos los campos son requeridos')
+      setError('Todos los campos son obligatorios')
       return
     }
 
     if (password !== confirmPassword) {
-      setError('Las contraseñas no coinciden')
+      setError('Las contrasenas no coinciden')
       return
     }
 
     if (password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres')
+      setError('La contrasena debe tener al menos 6 caracteres')
       return
     }
 
-    setIsLoading(true)
+    setIsSubmitting(true)
 
     try {
       await register(name, email, password, role)
-      router.push('/')
+      router.replace('/')
     } catch (err: any) {
-      setError(err.message || 'Error al registrarse')
+      setError(err.response?.data?.error || err.message || 'Error al registrarse')
     } finally {
-      setIsLoading(false)
+      setIsSubmitting(false)
     }
   }
 
@@ -57,23 +59,23 @@ export default function Register() {
       <NavBar />
       <div style={styles.container}>
         <div style={styles.card}>
-          <h1 style={styles.title}>Crear Cuenta</h1>
+          <h1 style={styles.title}>Crear cuenta</h1>
 
-          {error && <div style={styles.error}>{error}</div>}
+          {error ? <div style={styles.error}>{error}</div> : null}
 
           <form onSubmit={handleSubmit} style={styles.form}>
             <div style={styles.formGroup}>
               <label htmlFor="name" style={styles.label}>
-                Nombre Completo
+                Nombre completo
               </label>
               <input
                 id="name"
                 type="text"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(event) => setName(event.target.value)}
                 required
                 style={styles.input}
-                placeholder="Juan Pérez"
+                placeholder="Juan Perez"
               />
             </div>
 
@@ -85,7 +87,7 @@ export default function Register() {
                 id="email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(event) => setEmail(event.target.value)}
                 required
                 style={styles.input}
                 placeholder="tu@email.com"
@@ -94,59 +96,54 @@ export default function Register() {
 
             <div style={styles.formGroup}>
               <label htmlFor="role" style={styles.label}>
-                Tipo de Cuenta
+                Tipo de cuenta
               </label>
-              <select
-                id="role"
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                style={styles.input}
-              >
+              <select id="role" value={role} onChange={(event) => setRole(event.target.value)} style={styles.input}>
                 <option value="Cliente">Cliente</option>
-                <option value="Recepción">Recepción</option>
+                <option value={receptionRole}>{receptionRole}</option>
               </select>
             </div>
 
             <div style={styles.formGroup}>
               <label htmlFor="password" style={styles.label}>
-                Contraseña
+                Contrasena
               </label>
               <input
                 id="password"
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(event) => setPassword(event.target.value)}
                 required
                 style={styles.input}
-                placeholder="••••••••"
+                placeholder="********"
               />
             </div>
 
             <div style={styles.formGroup}>
               <label htmlFor="confirmPassword" style={styles.label}>
-                Confirmar Contraseña
+                Confirmar contrasena
               </label>
               <input
                 id="confirmPassword"
                 type="password"
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                onChange={(event) => setConfirmPassword(event.target.value)}
                 required
                 style={styles.input}
-                placeholder="••••••••"
+                placeholder="********"
               />
             </div>
 
-            <button type="submit" disabled={isLoading} style={styles.button}>
-              {isLoading ? 'Registrando...' : 'Registrarse'}
+            <button type="submit" disabled={isSubmitting} style={styles.button}>
+              {isSubmitting ? 'Registrando...' : 'Registrarse'}
             </button>
           </form>
 
           <div style={styles.footer}>
             <p>
-              ¿Ya tienes cuenta?{' '}
+              Ya tienes cuenta?{' '}
               <Link href="/login" style={styles.link}>
-                Inicia sesión
+                Inicia sesion
               </Link>
             </p>
           </div>
@@ -167,11 +164,11 @@ const styles = {
   },
   card: {
     backgroundColor: 'white',
-    borderRadius: '8px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+    borderRadius: '16px',
+    boxShadow: '0 18px 45px rgba(18, 38, 63, 0.08)',
     padding: '2rem',
     width: '100%',
-    maxWidth: '400px',
+    maxWidth: '440px',
   },
   title: {
     textAlign: 'center' as const,
@@ -193,30 +190,28 @@ const styles = {
     fontWeight: 'bold',
   },
   input: {
-    padding: '0.75rem',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
+    padding: '0.85rem 1rem',
+    border: '1px solid #d6dde4',
+    borderRadius: '12px',
     fontSize: '1rem',
     fontFamily: 'inherit',
   },
   button: {
-    padding: '0.75rem',
-    backgroundColor: '#28a745',
-    color: 'white',
+    padding: '0.9rem',
+    backgroundColor: '#d08c38',
+    color: '#1c1408',
     border: 'none',
-    borderRadius: '4px',
+    borderRadius: '999px',
     fontSize: '1rem',
     fontWeight: 'bold',
     cursor: 'pointer',
-    transition: 'background-color 0.3s',
   },
   error: {
     backgroundColor: '#f8d7da',
     color: '#721c24',
     padding: '0.75rem',
-    borderRadius: '4px',
+    borderRadius: '12px',
     marginBottom: '1rem',
-    borderLeft: '4px solid #721c24',
   },
   footer: {
     textAlign: 'center' as const,
@@ -225,7 +220,7 @@ const styles = {
     color: '#666',
   },
   link: {
-    color: '#007bff',
+    color: '#0b5ed7',
     textDecoration: 'none',
   },
 } as const

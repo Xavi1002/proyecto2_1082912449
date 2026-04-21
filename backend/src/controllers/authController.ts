@@ -129,7 +129,21 @@ export const getCurrentUser = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Usuario no encontrado' })
     }
 
-    res.json(user)
+    const currentUser = user.toJSON() as {
+      id: number
+      name: string
+      email: string
+      role?: {
+        name?: string
+      }
+    }
+
+    res.json({
+      id: currentUser.id,
+      name: currentUser.name,
+      email: currentUser.email,
+      role: currentUser.role?.name || req.user.role,
+    })
   } catch (error) {
     console.error('Error al obtener usuario actual:', error)
     res.status(500).json({ error: 'Error al obtener usuario' })

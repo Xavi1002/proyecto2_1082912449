@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import { useAuth } from '../lib/useAuth'
@@ -8,27 +8,28 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const { login, isAuthenticated } = useAuth()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { login, isAuthenticated, isLoading } = useAuth()
   const router = useRouter()
 
-  if (isAuthenticated) {
-    router.push('/')
-    return null
-  }
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.replace('/')
+    }
+  }, [isAuthenticated, isLoading, router])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault()
     setError('')
-    setIsLoading(true)
+    setIsSubmitting(true)
 
     try {
       await login(email, password)
-      router.push('/')
+      router.replace('/')
     } catch (err: any) {
-      setError(err.message || 'Error al iniciar sesión')
+      setError(err.response?.data?.error || err.message || 'Error al iniciar sesion')
     } finally {
-      setIsLoading(false)
+      setIsSubmitting(false)
     }
   }
 
@@ -37,9 +38,9 @@ export default function Login() {
       <NavBar />
       <div style={styles.container}>
         <div style={styles.card}>
-          <h1 style={styles.title}>Iniciar Sesión</h1>
+          <h1 style={styles.title}>Iniciar sesion</h1>
 
-          {error && <div style={styles.error}>{error}</div>}
+          {error ? <div style={styles.error}>{error}</div> : null}
 
           <form onSubmit={handleSubmit} style={styles.form}>
             <div style={styles.formGroup}>
@@ -50,7 +51,7 @@ export default function Login() {
                 id="email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(event) => setEmail(event.target.value)}
                 required
                 style={styles.input}
                 placeholder="tu@email.com"
@@ -59,27 +60,27 @@ export default function Login() {
 
             <div style={styles.formGroup}>
               <label htmlFor="password" style={styles.label}>
-                Contraseña
+                Contrasena
               </label>
               <input
                 id="password"
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(event) => setPassword(event.target.value)}
                 required
                 style={styles.input}
-                placeholder="••••••••"
+                placeholder="********"
               />
             </div>
 
-            <button type="submit" disabled={isLoading} style={styles.button}>
-              {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+            <button type="submit" disabled={isSubmitting} style={styles.button}>
+              {isSubmitting ? 'Iniciando sesion...' : 'Iniciar sesion'}
             </button>
           </form>
 
           <div style={styles.footer}>
             <p>
-              ¿No tienes cuenta?{' '}
+              No tienes cuenta?{' '}
               <Link href="/register" style={styles.link}>
                 Registrarse
               </Link>
@@ -102,11 +103,11 @@ const styles = {
   },
   card: {
     backgroundColor: 'white',
-    borderRadius: '8px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+    borderRadius: '16px',
+    boxShadow: '0 18px 45px rgba(18, 38, 63, 0.08)',
     padding: '2rem',
     width: '100%',
-    maxWidth: '400px',
+    maxWidth: '420px',
   },
   title: {
     textAlign: 'center' as const,
@@ -128,30 +129,28 @@ const styles = {
     fontWeight: 'bold',
   },
   input: {
-    padding: '0.75rem',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
+    padding: '0.85rem 1rem',
+    border: '1px solid #d6dde4',
+    borderRadius: '12px',
     fontSize: '1rem',
     fontFamily: 'inherit',
   },
   button: {
-    padding: '0.75rem',
-    backgroundColor: '#007bff',
+    padding: '0.9rem',
+    backgroundColor: '#132a3a',
     color: 'white',
     border: 'none',
-    borderRadius: '4px',
+    borderRadius: '999px',
     fontSize: '1rem',
     fontWeight: 'bold',
     cursor: 'pointer',
-    transition: 'background-color 0.3s',
   },
   error: {
     backgroundColor: '#f8d7da',
     color: '#721c24',
     padding: '0.75rem',
-    borderRadius: '4px',
+    borderRadius: '12px',
     marginBottom: '1rem',
-    borderLeft: '4px solid #721c24',
   },
   footer: {
     textAlign: 'center' as const,
@@ -160,7 +159,7 @@ const styles = {
     color: '#666',
   },
   link: {
-    color: '#007bff',
+    color: '#0b5ed7',
     textDecoration: 'none',
   },
 } as const

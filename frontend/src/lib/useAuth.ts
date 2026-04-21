@@ -1,5 +1,13 @@
-import { useEffect, useState, useCallback } from 'react'
-import { api } from './api'
+import {
+  ReactNode,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
+import api, { setAuthToken } from './api'
 
 export interface User {
   id: number
@@ -19,93 +27,127 @@ export interface AuthContextType {
   getCurrentUser: () => Promise<void>
 }
 
-const STORAGE_KEY = 'auth_token'
+interface AuthProviderProps {
+  children: ReactNode
+}
 
-export const useAuth = (): AuthContextType => {
+const STORAGE_KEY = 'auth_token'
+const AuthContext = createContext<AuthContextType | undefined>(undefined)
+
+const normalizeUser = (payload: any): User => ({
+  id: payload.id,
+  name: payload.name,
+  email: payload.email,
+  role: typeof payload.role === 'string' ? payload.role : payload.role?.name || '',
+})
+
+export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null)
   const [token, setToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-
-  // Cargar token del localStorage al iniciar
-  useEffect(() => {
-    const storedToken = localStorage.getItem(STORAGE_KEY)
-    if (storedToken) {
-      setToken(storedToken)
-      // Configurar header por defecto en axios
-      api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`
-    }
-    setIsLoading(false)
-  }, [])
-
-  const register = useCallback(
-    async (name: string, email: string, password: string, role = 'Cliente') => {
-      try {
-        setIsLoading(true)
-        const response = await api.post('/auth/register', {
-          name,
-          email,
-          password,
-          role,
-        })
-        const { token: newToken, user: userData } = response.data
-        setToken(newToken)
-        setUser(userData)
-        localStorage.setItem(STORAGE_KEY, newToken)
-        api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`
-      } catch (error: any) {
-        throw new Error(error.response?.data?.error || 'Error al registrar')
-      } finally {
-        setIsLoading(false)
-      }
-    },
-    []
-  )
-
-  const login = useCallback(async (email: string, password: string) => {
-    try {
-      setIsLoading(true)
-      const response = await api.post('/auth/login', { email, password })
-      const { token: newToken, user: userData } = response.data
-      setToken(newToken)
-      setUser(userData)
-      localStorage.setItem(STORAGE_KEY, newToken)
-      api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`
-    } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Error al iniciar sesión')
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
 
   const logout = useCallback(() => {
     setToken(null)
     setUser(null)
     localStorage.removeItem(STORAGE_KEY)
-    delete api.defaults.headers.common['Authorization']
+    setAuthToken(null)
   }, [])
 
   const getCurrentUser = useCallback(async () => {
-    if (!token) return
-    try {
-      setIsLoading(true)
-      const response = await api.get('/auth/me')
-      setUser(response.data)
-    } catch (error) {
-      console.error('Error fetching current user:', error)
-      logout()
-    } finally {
-      setIsLoading(false)
-    }
-  }, [token, logout])
+    const storedToken = token || localStorage.getItem(STORAGE_KEY)
 
-  return {
-    user,
-    token,
-    isLoading,
-    isAuthenticated: !!token,
-    register,
-    login,
-    logout,
-    getCurrentUser,
+    if (!storedToken) {
+      setUser(null)
+      return
+    }
+
+    setAuthToken(storedToken)
+    const response = await api.get('/auth/me')
+    setUser(normalizeUser(response.data))
+  }, [token])
+
+  useEffect(() => {
+    const restoreSession = async () => {
+      const storedToken = localStorage.getItem(STORAGE_KEY)
+
+      if (!storedToken) {
+        setIsLoading(false)
+        return
+      }
+
+      try {
+        setToken(storedToken)
+        setAuthToken(storedToken)
+        const response = await api.get('/auth/me')
+        setUser(normalizeUser(response.data))
+      } catch (error) {
+        console.error('Error restoring session:', error)
+        localStorage.removeItem(STORAGE_KEY)
+        setAuthToken(null)
+        setToken(null)
+        setUser(null)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    restoreSession()
+  }, [])
+
+  const register = useCallback(
+    async (name: string, email: string, password: string, role = 'Cliente') => {
+      const response = await api.post('/auth/register', {
+        name,
+        email,
+        password,
+        role,
+      })
+
+      const newToken = response.data.token as string
+      const userData = normalizeUser(response.data.user)
+
+      setToken(newToken)
+      setUser(userData)
+      localStorage.setItem(STORAGE_KEY, newToken)
+      setAuthToken(newToken)
+    },
+    []
+  )
+
+  const login = useCallback(async (email: string, password: string) => {
+    const response = await api.post('/auth/login', { email, password })
+    const newToken = response.data.token as string
+    const userData = normalizeUser(response.data.user)
+
+    setToken(newToken)
+    setUser(userData)
+    localStorage.setItem(STORAGE_KEY, newToken)
+    setAuthToken(newToken)
+  }, [])
+
+  const value = useMemo<AuthContextType>(
+    () => ({
+      user,
+      token,
+      isLoading,
+      isAuthenticated: !!token,
+      register,
+      login,
+      logout,
+      getCurrentUser,
+    }),
+    [getCurrentUser, isLoading, login, logout, register, token, user]
+  )
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+}
+
+export const useAuth = (): AuthContextType => {
+  const context = useContext(AuthContext)
+
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider')
   }
+
+  return context
 }

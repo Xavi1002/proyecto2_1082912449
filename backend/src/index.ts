@@ -5,8 +5,10 @@ import dotenv from 'dotenv'
 import sequelize from './config/database'
 import userRoutes from './routes/users'
 import authRoutes from './routes/auth'
+import roomRoutes from './routes/rooms'
 import User from './models/User'
 import Role, { RoleType } from './models/Role'
+import Room from './models/Room'
 
 dotenv.config()
 
@@ -28,6 +30,7 @@ app.get('/api/health', (req: Request, res: Response) => {
 
 app.use('/api', authRoutes)
 app.use('/api', userRoutes)
+app.use('/api', roomRoutes)
 
 // Database connection and seed roles
 const startServer = async () => {

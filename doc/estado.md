@@ -8,26 +8,24 @@
 |----------------------|----------------|----------|
 | Configuración inicial | ✅ Completado  | Estructura base, Git, Docker |
 | Autenticación        | ✅ Completado  | JWT, roles, registro, login |
-| Habitaciones         | ⏳ Pendiente   | CRUD de habitaciones |
+| CRUD Habitaciones    | ✅ Completado  | Crear, leer, actualizar, eliminar |
 | Reservas             | ⏳ Pendiente   | Sistema de reservas |
 | Clientes             | ⏳ Pendiente   | Gestión de clientes |
-| Dashboard            | ⏳ Pendiente   | Panel de control |
+| Dashboard            | 🔄 En progreso| Panel de control |
 | Buscador             | ⏳ Pendiente   | Búsqueda de disponibilidad |
 | UI/UX                | 🔄 En progreso| Componentes base |
 
 ## Cambios Recientes
 
-### Autenticación (Completado)
-- ✅ Sistema de registro con validación
-- ✅ Login con JWT
-- ✅ Sistema de roles (SuperAdmin, Recepción, Cliente)
-- ✅ Middleware de autenticación
-- ✅ Middleware de autorización por rol
-- ✅ Páginas de login y registro en frontend
-- ✅ Hook `useAuth` para manejo de autenticación
-- ✅ Componente `ProtectedRoute` para rutas protegidas
-- ✅ Componente `NavBar` con información de usuario
-- ✅ Hash de contraseñas con bcrypt
+### CRUD de Habitaciones (Completado)
+- ✅ Modelo Room con enums para tipo y estado
+- ✅ Controlador roomController con métodos CRUD
+- ✅ Rutas protegidas y públicas
+- ✅ Componente RoomList con filtros
+- ✅ Componente RoomForm para crear/editar
+- ✅ Página /rooms con estadísticas
+- ✅ Búsqueda y filtrado por tipo/estado
+- ✅ Estadísticas en tiempo real
 
 ## Problemas Detectados
 - Ninguno reportado actualmente
