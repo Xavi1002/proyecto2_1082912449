@@ -9,13 +9,24 @@
 | Configuración inicial | ✅ Completado  | Estructura base, Git, Docker |
 | Autenticación        | ✅ Completado  | JWT, roles, registro, login |
 | CRUD Habitaciones    | ✅ Completado  | Crear, leer, actualizar, eliminar |
-| Reservas             | ⏳ Pendiente   | Sistema de reservas |
+| Reservas             | ✅ Completado  | Sistema de reservas con disponibilidad |
 | Clientes             | ⏳ Pendiente   | Gestión de clientes |
 | Dashboard            | 🔄 En progreso| Panel de control |
-| Buscador             | ⏳ Pendiente   | Búsqueda de disponibilidad |
+| Buscador             | ✅ Completado | Búsqueda de disponibilidad en reservas |
 | UI/UX                | 🔄 En progreso| Componentes base |
 
 ## Cambios Recientes
+
+### Sistema de Reservas (Completado)
+- ✅ Modelo Reservation con enums para estados
+- ✅ Controlador reservationController con validación de disponibilidad
+- ✅ Verificación automática de conflictos de fechas
+- ✅ Cálculo automático de precios
+- ✅ Rutas protegidas y públicas
+- ✅ Componente ReservationForm para crear reservas
+- ✅ Componente ReservationList para listar reservas
+- ✅ Página /reservations con estadísticas
+- ✅ Integración en NavBar y página de inicio
 
 ### CRUD de Habitaciones (Completado)
 - ✅ Modelo Room con enums para tipo y estado
@@ -31,9 +42,9 @@
 - Ninguno reportado actualmente
 
 ## Próximos Pasos
-1. Implementar CRUD de habitaciones
-2. Crear sistema de reservas
-3. Implementar gestión de clientes
-4. Desarrollar dashboard/panel de control
-5. Agregar búsqueda de disponibilidad
-6. Mejorar diseño UI/UX
+1. Implementar gestión de clientes
+2. Desarrollar dashboard/panel de control mejorado
+3. Agregar reportes de ocupación
+4. Implementar sistema de pagos
+5. Mejorar diseño UI/UX general
+6. Agregar notificaciones por email

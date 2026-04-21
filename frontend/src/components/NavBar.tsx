@@ -22,6 +22,9 @@ export default function NavBar() {
                 <Link href="/rooms" style={styles.link}>
                   Habitaciones
                 </Link>
+                <Link href="/reservations" style={styles.link}>
+                  Reservas
+                </Link>
                 <Link href="/profile" style={styles.link}>
                   Perfil
                 </Link>

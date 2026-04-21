@@ -30,6 +30,11 @@ export default function Home() {
                 <p>Crear, editar, eliminar y consultar habitaciones.</p>
               </Link>
 
+              <Link href="/reservations" style={styles.card}>
+                <h2>Reservas</h2>
+                <p>Ver, crear y gestionar reservas de habitaciones.</p>
+              </Link>
+
               <Link href="/profile" style={styles.card}>
                 <h2>Mi perfil</h2>
                 <p>Consulta la informacion de tu cuenta y tu rol actual.</p>
