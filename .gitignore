@@ -1,0 +1,43 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+*.iml
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build outputs
+dist
+build
+out
+.next
+.nuxt
+
+# Testing
+coverage
+
+# Docker
+.dockerignore
+docker-compose.override.yml
