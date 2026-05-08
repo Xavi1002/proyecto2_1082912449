@@ -25,6 +25,11 @@ export default function Home() {
             </div>
 
             <div style={styles.grid}>
+              <Link href="/dashboard" style={styles.card}>
+                <h2>Dashboard</h2>
+                <p>Panel de control con estadísticas y ocupación del hotel.</p>
+              </Link>
+
               <Link href="/rooms" style={styles.card}>
                 <h2>Habitaciones</h2>
                 <p>Crear, editar, eliminar y consultar habitaciones.</p>
@@ -33,6 +38,11 @@ export default function Home() {
               <Link href="/reservations" style={styles.card}>
                 <h2>Reservas</h2>
                 <p>Ver, crear y gestionar reservas de habitaciones.</p>
+              </Link>
+
+              <Link href="/search" style={styles.card}>
+                <h2>Buscador</h2>
+                <p>Encuentra clientes por nombre y revisa el historial de sus reservas.</p>
               </Link>
 
               <Link href="/profile" style={styles.card}>

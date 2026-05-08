@@ -3,6 +3,8 @@ import { Op, sequelize } from 'sequelize'
 import Reservation, { ReservationStatus } from '../models/Reservation'
 import Room, { RoomStatus } from '../models/Room'
 import User from '../models/User'
+import { canViewReservation, canEditReservation, canDeleteReservation } from '../utils/permissions'
+import { RoleType } from '../models/Role'
 
 // Verificar disponibilidad de habitaciones
 export const checkAvailability = async (req: Request, res: Response) => {
@@ -176,11 +178,21 @@ export const createReservation = async (req: Request, res: Response) => {
 // Obtener todas las reservas (con filtros)
 export const getReservations = async (req: Request, res: Response) => {
   try {
-    const { status, userId, roomId, startDate, endDate } = req.query
+    const userId = req.user?.id
+    const userRole = (req.user?.role || RoleType.CLIENTE) as RoleType
+    const { status, userId: filteredUserId, roomId, startDate, endDate } = req.query
+
+    // Validar permisos nuevamente
+    if (!canViewReservation(userRole, userId || 0, userId || 0)) {
+      return res.status(403).json({
+        error: 'No tiene permiso para ver reservas',
+      })
+    }
+
     const where: any = {}
 
     if (status) where.status = status
-    if (userId) where.userId = userId
+    if (filteredUserId) where.userId = filteredUserId
     if (roomId) where.roomId = roomId
 
     if (startDate || endDate) {
@@ -212,6 +224,8 @@ export const getReservations = async (req: Request, res: Response) => {
 export const getReservationById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params
+    const userId = req.user?.id
+    const userRole = (req.user?.role || RoleType.CLIENTE) as RoleType
 
     const reservation = await Reservation.findByPk(id, {
       include: [
@@ -222,6 +236,13 @@ export const getReservationById = async (req: Request, res: Response) => {
 
     if (!reservation) {
       return res.status(404).json({ error: 'Reserva no encontrada' })
+    }
+
+    // Verificar permisos
+    if (!canViewReservation(userRole, userId || 0, reservation.userId)) {
+      return res.status(403).json({
+        error: 'No tiene permiso para ver esta reserva',
+      })
     }
 
     res.json(reservation)
@@ -235,11 +256,20 @@ export const getReservationById = async (req: Request, res: Response) => {
 export const updateReservation = async (req: Request, res: Response) => {
   try {
     const { id } = req.params
+    const userId = req.user?.id
+    const userRole = (req.user?.role || RoleType.CLIENTE) as RoleType
     const { checkInDate, checkOutDate, numberOfGuests, specialRequests, status } = req.body
 
     const reservation = await Reservation.findByPk(id)
     if (!reservation) {
       return res.status(404).json({ error: 'Reserva no encontrada' })
+    }
+
+    // Verificar permisos - Solo Recepción y SuperAdmin pueden actualizar
+    if (!canEditReservation(userRole, userId || 0, reservation.userId)) {
+      return res.status(403).json({
+        error: 'No tiene permiso para actualizar esta reserva',
+      })
     }
 
     // Si está cancelada, no se puede actualizar
@@ -295,11 +325,13 @@ export const updateReservation = async (req: Request, res: Response) => {
         numberOfGuests: numberOfGuests || reservation.numberOfGuests,
         specialRequests: specialRequests !== undefined ? specialRequests : reservation.specialRequests,
         totalPrice,
+        ...(status && { status }),
       })
     } else {
       await reservation.update({
         numberOfGuests: numberOfGuests || reservation.numberOfGuests,
         specialRequests: specialRequests !== undefined ? specialRequests : reservation.specialRequests,
+        ...(status && { status }),
       })
     }
 
@@ -325,10 +357,19 @@ export const updateReservation = async (req: Request, res: Response) => {
 export const cancelReservation = async (req: Request, res: Response) => {
   try {
     const { id } = req.params
+    const userId = req.user?.id
+    const userRole = (req.user?.role || RoleType.CLIENTE) as RoleType
 
     const reservation = await Reservation.findByPk(id)
     if (!reservation) {
       return res.status(404).json({ error: 'Reserva no encontrada' })
+    }
+
+    // Verificar permisos
+    if (!canDeleteReservation(userRole, userId || 0, reservation.userId)) {
+      return res.status(403).json({
+        error: 'No tiene permiso para cancelar esta reserva',
+      })
     }
 
     if (reservation.status === ReservationStatus.CANCELLED) {

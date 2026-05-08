@@ -4,12 +4,12 @@ import { useAuth } from '../lib/useAuth'
 
 interface ProtectedRouteProps {
   children: ReactNode
-  requiredRole?: string
+  requiredRoles?: string[]
 }
 
 export default function ProtectedRoute({
   children,
-  requiredRole,
+  requiredRoles = [],
 }: ProtectedRouteProps) {
   const { isAuthenticated, user, isLoading } = useAuth()
   const router = useRouter()
@@ -22,25 +22,40 @@ export default function ProtectedRoute({
 
   if (isLoading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <p>Cargando...</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-primary-900 to-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-500 mx-auto mb-4"></div>
+          <p className="text-slate-300">Cargando...</p>
+        </div>
       </div>
     )
   }
 
   if (!isAuthenticated) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <p>Redirigiendo...</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-primary-900 to-slate-900 flex items-center justify-center">
+        <p className="text-slate-300">Redirigiendo...</p>
       </div>
     )
   }
 
-  if (requiredRole && user?.role !== requiredRole) {
+  // Si se especifican roles requeridos, verificar
+  if (requiredRoles.length > 0 && !requiredRoles.includes(user?.role || '')) {
     return (
-      <div style={{ padding: '2rem', textAlign: 'center' }}>
-        <h1>Acceso denegado</h1>
-        <p>No tienes permisos para acceder a esta pagina.</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-primary-900 to-slate-900 flex items-center justify-center px-4">
+        <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-8 max-w-md w-full text-center">
+          <div className="text-5xl mb-4">🔐</div>
+          <h1 className="text-3xl font-bold text-white mb-2">Acceso Denegado</h1>
+          <p className="text-slate-300 mb-6">
+            No tienes permisos para acceder a esta página.
+          </p>
+          <button
+            onClick={() => router.replace('/')}
+            className="w-full py-2 px-4 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors duration-200"
+          >
+            Volver al inicio
+          </button>
+        </div>
       </div>
     )
   }

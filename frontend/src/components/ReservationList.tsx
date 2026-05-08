@@ -18,6 +18,13 @@ interface ReservationListProps {
   myReservationsOnly?: boolean
 }
 
+const statusConfig: Record<string, { bg: string; text: string; icon: string }> = {
+  Pendiente: { bg: 'bg-yellow-500/20', text: 'text-yellow-200', icon: '⏳' },
+  Confirmada: { bg: 'bg-emerald-500/20', text: 'text-emerald-200', icon: '✅' },
+  Cancelada: { bg: 'bg-red-500/20', text: 'text-red-200', icon: '❌' },
+  Completada: { bg: 'bg-slate-500/20', text: 'text-slate-200', icon: '✓' },
+}
+
 export default function ReservationList({ myReservationsOnly = true }: ReservationListProps) {
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -56,20 +63,10 @@ export default function ReservationList({ myReservationsOnly = true }: Reservati
     }
   }
 
-  const getStatusColor = (status: string) => {
-    const colors: { [key: string]: string } = {
-      Pendiente: '#ffc107',
-      Confirmada: '#28a745',
-      Cancelada: '#dc3545',
-      Completada: '#6c757d',
-    }
-    return colors[status] || '#6c757d'
-  }
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('es-ES', {
       year: 'numeric',
-      month: 'long',
+      month: 'short',
       day: 'numeric',
     })
   }
@@ -81,206 +78,125 @@ export default function ReservationList({ myReservationsOnly = true }: Reservati
   }
 
   if (isLoading) {
-    return <div style={styles.loading}>Cargando reservas...</div>
+    return (
+      <div className="flex justify-center items-center py-12">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-500 mx-auto mb-4"></div>
+          <p className="text-slate-300">Cargando reservas...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div style={styles.container}>
-      {error && <div style={styles.error}>{error}</div>}
-
-      {!myReservationsOnly && (
-        <div style={styles.filters}>
-          <div style={styles.filterGroup}>
-            <label>Estado:</label>
-            <select
-              value={filter.status}
-              onChange={(e) => setFilter({ status: e.target.value })}
-              style={styles.select}
-            >
-              <option value="">Todos</option>
-              <option value="Pendiente">Pendiente</option>
-              <option value="Confirmada">Confirmada</option>
-              <option value="Cancelada">Cancelada</option>
-              <option value="Completada">Completada</option>
-            </select>
-          </div>
+    <div className="space-y-6">
+      {/* Error */}
+      {error && (
+        <div className="p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-300 text-sm animate-fade-in">
+          {error}
         </div>
       )}
 
+      {/* Filters */}
+      {!myReservationsOnly && (
+        <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-lg p-4">
+          <label className="block text-sm font-medium text-slate-300 mb-2">
+            Filtrar por estado:
+          </label>
+          <select
+            value={filter.status}
+            onChange={(e) => setFilter({ status: e.target.value })}
+            className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
+          >
+            <option value="">Todos los estados</option>
+            <option value="Pendiente">Pendiente</option>
+            <option value="Confirmada">Confirmada</option>
+            <option value="Cancelada">Cancelada</option>
+            <option value="Completada">Completada</option>
+          </select>
+        </div>
+      )}
+
+      {/* Content */}
       {reservations.length === 0 ? (
-        <div style={styles.noReservations}>No hay reservas registradas</div>
+        <div className="text-center py-12 bg-white/5 rounded-lg border border-white/10">
+          <svg className="w-16 h-16 mx-auto text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <p className="text-slate-400">No hay reservas registradas</p>
+        </div>
       ) : (
-        <div style={styles.grid}>
-          {reservations.map((reservation) => (
-            <div key={reservation.id} style={styles.card}>
-              <div style={styles.cardHeader}>
-                <h3>Habitación {reservation.room?.roomNumber}</h3>
-                <div
-                  style={{
-                    ...styles.status,
-                    backgroundColor: getStatusColor(reservation.status),
-                  }}
-                >
-                  {reservation.status}
-                </div>
-              </div>
-
-              <div style={styles.cardBody}>
-                <div style={styles.dateSection}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {reservations.map((reservation) => {
+            const statusInfo = statusConfig[reservation.status] || statusConfig.Pendiente
+            const nights = calculateDays(reservation.checkInDate, reservation.checkOutDate)
+            return (
+              <div
+                key={reservation.id}
+                className="bg-white/10 backdrop-blur border border-white/20 rounded-lg overflow-hidden hover:border-white/40 transition-all duration-300 hover:shadow-lg flex flex-col"
+              >
+                {/* Header */}
+                <div className="bg-gradient-to-r from-primary-600/20 to-primary-500/10 p-4 border-b border-white/10 flex justify-between items-start">
                   <div>
-                    <p style={styles.label}>Entrada</p>
-                    <p style={styles.value}>{formatDate(reservation.checkInDate)}</p>
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Habitación</p>
+                    <h3 className="text-2xl font-bold text-white">#{reservation.room?.roomNumber}</h3>
                   </div>
-                  <div>
-                    <p style={styles.label}>Salida</p>
-                    <p style={styles.value}>{formatDate(reservation.checkOutDate)}</p>
-                  </div>
-                  <div>
-                    <p style={styles.label}>Noches</p>
-                    <p style={styles.value}>
-                      {calculateDays(reservation.checkInDate, reservation.checkOutDate)}
-                    </p>
+                  <div className={`${statusInfo.bg} ${statusInfo.text} px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider whitespace-nowrap`}>
+                    {statusInfo.icon} {reservation.status}
                   </div>
                 </div>
 
-                <div style={styles.infoSection}>
-                  <p>
-                    <strong>Tipo:</strong> {reservation.room?.type}
-                  </p>
-                  <p>
-                    <strong>Huéspedes:</strong> {reservation.numberOfGuests}
-                  </p>
-                  <p>
-                    <strong>Precio Total:</strong> ${parseFloat(reservation.totalPrice.toString()).toFixed(2)}
-                  </p>
-                </div>
-              </div>
+                {/* Body */}
+                <div className="p-4 flex-grow space-y-4">
+                  {/* Dates */}
+                  <div className="grid grid-cols-3 gap-3 pb-4 border-b border-white/10">
+                    <div>
+                      <p className="text-xs text-slate-400 mb-1 font-medium">Entrada</p>
+                      <p className="text-sm font-bold text-white">{formatDate(reservation.checkInDate)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-400 mb-1 font-medium">Salida</p>
+                      <p className="text-sm font-bold text-white">{formatDate(reservation.checkOutDate)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-400 mb-1 font-medium">Noches</p>
+                      <p className="text-sm font-bold text-primary-400">{nights} 🌙</p>
+                    </div>
+                  </div>
 
-              <div style={styles.cardFooter}>
+                  {/* Info */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-400">Tipo:</span>
+                      <span className="text-white font-medium">{reservation.room?.type}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-400">Huéspedes:</span>
+                      <span className="text-white font-medium">{reservation.numberOfGuests} 👥</span>
+                    </div>
+                    <div className="flex justify-between text-sm pt-2 border-t border-white/10">
+                      <span className="text-slate-400 font-medium">Total:</span>
+                      <span className="text-primary-400 font-bold">${parseFloat(reservation.totalPrice.toString()).toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer */}
                 {reservation.status !== 'Cancelada' && reservation.status !== 'Completada' && (
-                  <button
-                    onClick={() => handleCancel(reservation.id)}
-                    style={styles.cancelButton}
-                  >
-                    Cancelar Reserva
-                  </button>
+                  <div className="p-4 border-t border-white/10">
+                    <button
+                      onClick={() => handleCancel(reservation.id)}
+                      className="w-full py-2 px-4 bg-red-600/80 hover:bg-red-700 text-white font-medium rounded-lg transition-colors duration-200 text-sm"
+                    >
+                      Cancelar Reserva
+                    </button>
+                  </div>
                 )}
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>
   )
 }
-
-const styles = {
-  container: {
-    padding: '2rem',
-  },
-  loading: {
-    textAlign: 'center' as const,
-    padding: '2rem',
-    color: '#666',
-  },
-  error: {
-    backgroundColor: '#f8d7da',
-    color: '#721c24',
-    padding: '1rem',
-    borderRadius: '4px',
-    marginBottom: '1rem',
-    borderLeft: '4px solid #721c24',
-  },
-  filters: {
-    display: 'flex',
-    gap: '1rem',
-    marginBottom: '2rem',
-  },
-  filterGroup: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '0.5rem',
-  },
-  select: {
-    padding: '0.5rem',
-    borderRadius: '4px',
-    border: '1px solid #ddd',
-    fontSize: '0.9rem',
-  },
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
-    gap: '1.5rem',
-  },
-  card: {
-    backgroundColor: 'white',
-    borderRadius: '8px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-    overflow: 'hidden',
-    display: 'flex',
-    flexDirection: 'column' as const,
-  },
-  cardHeader: {
-    backgroundColor: '#f8f9fa',
-    padding: '1rem',
-    borderBottom: '1px solid #eee',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  status: {
-    color: 'white',
-    padding: '0.25rem 0.75rem',
-    borderRadius: '20px',
-    fontSize: '0.85rem',
-    fontWeight: 'bold',
-  },
-  cardBody: {
-    padding: '1rem',
-    flex: 1,
-  },
-  dateSection: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr 1fr',
-    gap: '1rem',
-    marginBottom: '1rem',
-    paddingBottom: '1rem',
-    borderBottom: '1px solid #eee',
-  },
-  label: {
-    fontSize: '0.85rem',
-    color: '#666',
-    margin: '0 0 0.25rem 0',
-  },
-  value: {
-    fontSize: '1.1rem',
-    fontWeight: 'bold',
-    margin: 0,
-  },
-  infoSection: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '0.5rem',
-  },
-  cardFooter: {
-    display: 'flex',
-    gap: '0.5rem',
-    padding: '1rem',
-    borderTop: '1px solid #eee',
-  },
-  cancelButton: {
-    flex: 1,
-    padding: '0.5rem',
-    backgroundColor: '#dc3545',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '0.9rem',
-  },
-  noReservations: {
-    textAlign: 'center' as const,
-    padding: '2rem',
-    color: '#999',
-  },
-} as const

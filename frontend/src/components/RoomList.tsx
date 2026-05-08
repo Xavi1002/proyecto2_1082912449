@@ -16,11 +16,11 @@ interface RoomListProps {
   onDeleteSuccess?: () => void
 }
 
-const statusColors: Record<string, string> = {
-  Disponible: '#2e8b57',
-  Ocupada: '#c0392b',
-  Mantenimiento: '#c78a11',
-  Limpieza: '#227c9d',
+const statusConfig: Record<string, { color: string; bg: string; text: string }> = {
+  Disponible: { color: 'emerald', bg: 'bg-emerald-500/20', text: 'text-emerald-200' },
+  Ocupada: { color: 'red', bg: 'bg-red-500/20', text: 'text-red-200' },
+  Mantenimiento: { color: 'yellow', bg: 'bg-yellow-500/20', text: 'text-yellow-200' },
+  Limpieza: { color: 'blue', bg: 'bg-blue-500/20', text: 'text-blue-200' },
 }
 
 export default function RoomList({
@@ -86,25 +86,27 @@ export default function RoomList({
   }
 
   return (
-    <section style={styles.section}>
-      <div style={styles.toolbar}>
+    <section className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-6 md:p-8">
+      {/* Toolbar */}
+      <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-6 mb-6">
         <div>
-          <h2 style={styles.sectionTitle}>Listado de habitaciones</h2>
-          <p style={styles.sectionSubtitle}>{summary}</p>
+          <h2 className="text-3xl font-bold text-white mb-1">Listado de Habitaciones</h2>
+          <p className="text-slate-400">{summary}</p>
         </div>
 
-        <div style={styles.filters}>
+        {/* Filters */}
+        <div className="w-full md:w-auto flex flex-col sm:flex-row gap-3">
           <input
             type="text"
-            placeholder="Buscar por numero"
+            placeholder="Buscar por número"
             value={filters.search}
             onChange={(event) => setFilters((current) => ({ ...current, search: event.target.value }))}
-            style={styles.input}
+            className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
           />
           <select
             value={filters.type}
             onChange={(event) => setFilters((current) => ({ ...current, type: event.target.value }))}
-            style={styles.input}
+            className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
           >
             <option value="">Todos los tipos</option>
             <option value="Individual">Individual</option>
@@ -115,7 +117,7 @@ export default function RoomList({
           <select
             value={filters.status}
             onChange={(event) => setFilters((current) => ({ ...current, status: event.target.value }))}
-            style={styles.input}
+            className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
           >
             <option value="">Todos los estados</option>
             <option value="Disponible">Disponible</option>
@@ -126,190 +128,84 @@ export default function RoomList({
         </div>
       </div>
 
-      {error ? <div style={styles.error}>{error}</div> : null}
+      {/* Error */}
+      {error && (
+        <div className="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-red-300 text-sm animate-fade-in">
+          {error}
+        </div>
+      )}
 
+      {/* Content */}
       {isLoading ? (
-        <div style={styles.stateBox}>Cargando habitaciones...</div>
+        <div className="flex justify-center items-center py-16">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-500 mx-auto mb-4"></div>
+            <p className="text-slate-300">Cargando habitaciones...</p>
+          </div>
+        </div>
       ) : rooms.length === 0 ? (
-        <div style={styles.stateBox}>No hay habitaciones registradas con esos filtros.</div>
+        <div className="border border-dashed border-white/20 rounded-lg p-12 text-center">
+          <p className="text-slate-400">No hay habitaciones registradas con esos filtros.</p>
+        </div>
       ) : (
-        <div style={styles.grid}>
-          {rooms.map((room) => (
-            <article key={room.id} style={styles.card}>
-              <div style={styles.cardTop}>
-                <div>
-                  <p style={styles.cardLabel}>Habitacion</p>
-                  <h3 style={styles.cardTitle}>{room.roomNumber}</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {rooms.map((room) => {
+            const statusInfo = statusConfig[room.status] || statusConfig.Disponible
+            return (
+              <article key={room.id} className="bg-white/5 hover:bg-white/10 backdrop-blur border border-white/20 rounded-lg p-5 transition-all duration-300 hover:shadow-lg hover:border-white/40">
+                {/* Room Header */}
+                <div className="flex justify-between items-start gap-3 mb-4">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                      Habitación
+                    </p>
+                    <h3 className="text-2xl font-bold text-white">
+                      {room.roomNumber}
+                    </h3>
+                  </div>
+                  <span className={`${statusInfo.bg} ${statusInfo.text} px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider whitespace-nowrap`}>
+                    {room.status}
+                  </span>
                 </div>
-                <span
-                  style={{
-                    ...styles.badge,
-                    backgroundColor: statusColors[room.status] || '#5c6770',
-                  }}
-                >
-                  {room.status}
-                </span>
-              </div>
 
-              <div style={styles.metaGrid}>
-                <div style={styles.metaItem}>
-                  <span style={styles.metaLabel}>Tipo</span>
-                  <strong>{room.type}</strong>
+                {/* Room Info */}
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="bg-white/10 rounded-lg p-3 border border-white/10">
+                    <p className="text-xs text-slate-400 mb-1 font-medium">Tipo</p>
+                    <p className="text-sm font-bold text-white">{room.type}</p>
+                  </div>
+                  <div className="bg-white/10 rounded-lg p-3 border border-white/10">
+                    <p className="text-xs text-slate-400 mb-1 font-medium">Precio/Noche</p>
+                    <p className="text-sm font-bold text-primary-400">
+                      ${Number(room.pricePerNight).toFixed(2)}
+                    </p>
+                  </div>
                 </div>
-                <div style={styles.metaItem}>
-                  <span style={styles.metaLabel}>Precio por noche</span>
-                  <strong>${Number(room.pricePerNight).toFixed(2)}</strong>
-                </div>
-              </div>
 
-              {canManageRooms ? (
-                <div style={styles.actions}>
-                  <button type="button" onClick={() => onEdit?.(room)} style={styles.editButton}>
-                    Editar
-                  </button>
-                  <button type="button" onClick={() => handleDelete(room.id)} style={styles.deleteButton}>
-                    Eliminar
-                  </button>
-                </div>
-              ) : null}
-            </article>
-          ))}
+                {/* Actions */}
+                {canManageRooms ? (
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onEdit?.(room)}
+                      className="flex-1 py-2 px-3 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium text-sm transition-colors duration-200"
+                    >
+                      Editar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(room.id)}
+                      className="flex-1 py-2 px-3 bg-red-600/80 hover:bg-red-700 text-white rounded-lg font-medium text-sm transition-colors duration-200"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                ) : null}
+              </article>
+            )
+          })}
         </div>
       )}
     </section>
   )
 }
-
-const styles = {
-  section: {
-    backgroundColor: 'white',
-    borderRadius: '24px',
-    padding: '1.5rem',
-    boxShadow: '0 18px 45px rgba(18, 38, 63, 0.08)',
-    maxWidth: '1200px',
-    margin: '0 auto',
-  },
-  toolbar: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    gap: '1rem',
-    alignItems: 'flex-start',
-    flexWrap: 'wrap' as const,
-    marginBottom: '1.25rem',
-  },
-  sectionTitle: {
-    margin: 0,
-    color: '#162534',
-  },
-  sectionSubtitle: {
-    margin: '0.4rem 0 0',
-    color: '#617181',
-  },
-  filters: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-    gap: '0.75rem',
-    width: '100%',
-    maxWidth: '640px',
-  },
-  input: {
-    border: '1px solid #ccd5de',
-    borderRadius: '12px',
-    padding: '0.85rem 1rem',
-    fontSize: '0.95rem',
-    backgroundColor: '#fbfcfe',
-  },
-  error: {
-    backgroundColor: '#fbe5e6',
-    color: '#8b1e2d',
-    borderRadius: '12px',
-    padding: '0.9rem 1rem',
-    marginBottom: '1rem',
-  },
-  stateBox: {
-    border: '1px dashed #cfd7df',
-    borderRadius: '18px',
-    padding: '2rem',
-    textAlign: 'center' as const,
-    color: '#607080',
-  },
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-    gap: '1rem',
-  },
-  card: {
-    border: '1px solid #e1e7ed',
-    borderRadius: '18px',
-    padding: '1.25rem',
-    backgroundColor: '#fcfdff',
-  },
-  cardTop: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    gap: '0.75rem',
-    alignItems: 'flex-start',
-    marginBottom: '1rem',
-  },
-  cardLabel: {
-    margin: 0,
-    textTransform: 'uppercase' as const,
-    letterSpacing: '0.08em',
-    fontSize: '0.75rem',
-    color: '#8c5d2e',
-    fontWeight: 700,
-  },
-  cardTitle: {
-    margin: '0.35rem 0 0',
-    fontSize: '1.6rem',
-    color: '#162534',
-  },
-  badge: {
-    color: 'white',
-    borderRadius: '999px',
-    padding: '0.45rem 0.8rem',
-    fontSize: '0.85rem',
-    fontWeight: 700,
-  },
-  metaGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-    gap: '0.75rem',
-  },
-  metaItem: {
-    backgroundColor: '#eef3f7',
-    borderRadius: '14px',
-    padding: '0.9rem',
-  },
-  metaLabel: {
-    display: 'block',
-    color: '#607080',
-    fontSize: '0.82rem',
-    marginBottom: '0.35rem',
-  },
-  actions: {
-    display: 'flex',
-    gap: '0.75rem',
-    marginTop: '1rem',
-  },
-  editButton: {
-    flex: 1,
-    border: 'none',
-    borderRadius: '999px',
-    padding: '0.8rem 1rem',
-    backgroundColor: '#163349',
-    color: 'white',
-    fontWeight: 700,
-    cursor: 'pointer',
-  },
-  deleteButton: {
-    flex: 1,
-    border: 'none',
-    borderRadius: '999px',
-    padding: '0.8rem 1rem',
-    backgroundColor: '#c64032',
-    color: 'white',
-    fontWeight: 700,
-    cursor: 'pointer',
-  },
-} as const

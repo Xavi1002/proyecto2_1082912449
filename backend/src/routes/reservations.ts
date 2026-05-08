@@ -9,20 +9,33 @@ import {
   getMyReservations,
   getReservationStatistics,
 } from '../controllers/reservationController'
-import { authenticateToken } from '../middleware/auth'
+import { authenticateToken, authorizeRole } from '../middleware/auth'
+import { RoleType } from '../models/Role'
 
 const router = Router()
 
 // Rutas públicas
 router.get('/reservations/availability', checkAvailability)
-router.get('/reservations/statistics', getReservationStatistics)
 
-// Rutas protegidas
+// Obtener estadísticas - Solo autenticados
+router.get('/reservations/statistics', authenticateToken, getReservationStatistics)
+
+// Crear reserva - Todos los usuarios autenticados
 router.post('/reservations', authenticateToken, createReservation)
+
+// Obtener mis reservas - Todos los usuarios autenticados
 router.get('/reservations/my-reservations', authenticateToken, getMyReservations)
-router.get('/reservations', getReservations)
-router.get('/reservations/:id', getReservationById)
-router.put('/reservations/:id', authenticateToken, updateReservation)
+
+// Obtener todas las reservas - Solo Recepción y SuperAdmin
+router.get('/reservations', authenticateToken, authorizeRole(RoleType.SUPERADMIN, RoleType.RECEPCION), getReservations)
+
+// Obtener reserva por ID - El propietario o Recepción/SuperAdmin
+router.get('/reservations/:id', authenticateToken, getReservationById)
+
+// Actualizar reserva - Recepción y SuperAdmin
+router.put('/reservations/:id', authenticateToken, authorizeRole(RoleType.SUPERADMIN, RoleType.RECEPCION), updateReservation)
+
+// Cancelar reserva - El propietario o Recepción/SuperAdmin
 router.delete('/reservations/:id', authenticateToken, cancelReservation)
 
 export default router

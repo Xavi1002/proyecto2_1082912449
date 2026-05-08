@@ -1,50 +1,156 @@
 import { Request, Response } from 'express'
+import { Op } from 'sequelize'
+import Role, { RoleType } from '../models/Role'
 import User from '../models/User'
 
 export const getUsers = async (req: Request, res: Response) => {
   try {
-    const users = await User.findAll()
-    res.json(users)
+    const users = await User.findAll({
+      include: [
+        {
+          model: Role,
+          as: 'role',
+          attributes: ['id', 'name', 'description'],
+        },
+      ],
+      attributes: { exclude: ['password'] },
+      order: [['createdAt', 'DESC']],
+    })
+    res.json({
+      count: users.length,
+      users,
+    })
   } catch (error) {
-    res.status(500).json({ error: 'Error fetching users' })
+    console.error('Error al obtener usuarios:', error)
+    res.status(500).json({ error: 'Error al obtener usuarios' })
   }
 }
 
 export const getUserById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params
-    const user = await User.findByPk(id)
+    const user = await User.findByPk(id, {
+      include: [
+        {
+          model: Role,
+          as: 'role',
+          attributes: ['id', 'name', 'description'],
+        },
+      ],
+      attributes: { exclude: ['password'] },
+    })
     if (!user) {
-      return res.status(404).json({ error: 'User not found' })
+      return res.status(404).json({ error: 'Usuario no encontrado' })
     }
     res.json(user)
   } catch (error) {
-    res.status(500).json({ error: 'Error fetching user' })
+    console.error('Error al obtener usuario:', error)
+    res.status(500).json({ error: 'Error al obtener usuario' })
   }
 }
 
 export const createUser = async (req: Request, res: Response) => {
   try {
-    const { name, email } = req.body
-    const user = await User.create({ name, email })
-    res.status(201).json(user)
+    const { name, email, roleId } = req.body
+
+    // Validaciones
+    if (!name || !email || !roleId) {
+      return res.status(400).json({
+        error: 'name, email y roleId son requeridos',
+      })
+    }
+
+    // Verificar que el rol existe
+    const role = await Role.findByPk(roleId)
+    if (!role) {
+      return res.status(400).json({ error: 'Rol no encontrado' })
+    }
+
+    // Verificar que el email no existe
+    const existingUser = await User.findOne({ where: { email } })
+    if (existingUser) {
+      return res.status(409).json({ error: 'El email ya está registrado' })
+    }
+
+    const user = await User.create({
+      name,
+      email,
+      roleId,
+      password: 'temporal', // Se debe cambiar en primer login
+    })
+
+    const userWithRole = await User.findByPk(user.id, {
+      include: [
+        {
+          model: Role,
+          as: 'role',
+          attributes: ['id', 'name', 'description'],
+        },
+      ],
+      attributes: { exclude: ['password'] },
+    })
+
+    res.status(201).json({
+      message: 'Usuario creado exitosamente',
+      user: userWithRole,
+    })
   } catch (error) {
-    res.status(400).json({ error: 'Error creating user' })
+    console.error('Error al crear usuario:', error)
+    res.status(500).json({ error: 'Error al crear usuario' })
   }
 }
 
 export const updateUser = async (req: Request, res: Response) => {
   try {
     const { id } = req.params
-    const { name, email } = req.body
+    const { name, email, roleId, isActive } = req.body
+
     const user = await User.findByPk(id)
     if (!user) {
-      return res.status(404).json({ error: 'User not found' })
+      return res.status(404).json({ error: 'Usuario no encontrado' })
     }
-    await user.update({ name, email })
-    res.json(user)
+
+    // Si se cambia el email, verificar que no exista otro
+    if (email && email !== user.email) {
+      const existingUser = await User.findOne({ where: { email } })
+      if (existingUser) {
+        return res.status(409).json({ error: 'El email ya está registrado' })
+      }
+    }
+
+    // Si se cambia el rol, verificar que existe
+    if (roleId) {
+      const role = await Role.findByPk(roleId)
+      if (!role) {
+        return res.status(400).json({ error: 'Rol no encontrado' })
+      }
+    }
+
+    await user.update({
+      ...(name && { name }),
+      ...(email && { email }),
+      ...(roleId && { roleId }),
+      ...(isActive !== undefined && { isActive }),
+    })
+
+    const updatedUser = await User.findByPk(user.id, {
+      include: [
+        {
+          model: Role,
+          as: 'role',
+          attributes: ['id', 'name', 'description'],
+        },
+      ],
+      attributes: { exclude: ['password'] },
+    })
+
+    res.json({
+      message: 'Usuario actualizado exitosamente',
+      user: updatedUser,
+    })
   } catch (error) {
-    res.status(400).json({ error: 'Error updating user' })
+    console.error('Error al actualizar usuario:', error)
+    res.status(500).json({ error: 'Error al actualizar usuario' })
   }
 }
 
@@ -53,11 +159,52 @@ export const deleteUser = async (req: Request, res: Response) => {
     const { id } = req.params
     const user = await User.findByPk(id)
     if (!user) {
-      return res.status(404).json({ error: 'User not found' })
+      return res.status(404).json({ error: 'Usuario no encontrado' })
     }
     await user.destroy()
-    res.json({ message: 'User deleted' })
+    res.json({ message: 'Usuario eliminado exitosamente' })
   } catch (error) {
-    res.status(500).json({ error: 'Error deleting user' })
+    console.error('Error al eliminar usuario:', error)
+    res.status(500).json({ error: 'Error al eliminar usuario' })
+  }
+}
+
+export const searchUsersByName = async (req: Request, res: Response) => {
+  try {
+    const { name } = req.query
+    if (!name || typeof name !== 'string') {
+      return res.status(400).json({ error: 'Término de búsqueda requerido' })
+    }
+
+    const normalizedName = name.trim()
+    if (!normalizedName) {
+      return res.status(400).json({ error: 'Término de búsqueda requerido' })
+    }
+
+    const clientRole = await Role.findOne({
+      where: { name: RoleType.CLIENTE },
+      attributes: ['id'],
+    })
+
+    if (!clientRole) {
+      return res.status(500).json({ error: 'Rol de cliente no configurado' })
+    }
+
+    const users = await User.findAll({
+      attributes: ['id', 'name', 'email'],
+      where: {
+        roleId: clientRole.id,
+        isActive: true,
+        name: {
+          [Op.iLike]: `%${normalizedName}%`,
+        },
+      },
+      order: [['name', 'ASC']],
+      limit: 50,
+    })
+
+    res.json({ users, count: users.length })
+  } catch (error) {
+    res.status(500).json({ error: 'Error searching users' })
   }
 }

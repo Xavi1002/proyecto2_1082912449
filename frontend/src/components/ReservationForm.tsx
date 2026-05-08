@@ -90,17 +90,32 @@ export default function ReservationForm({ onSuccess, onCancel }: ReservationForm
   }
 
   return (
-    <form onSubmit={handleSubmit} style={styles.form}>
-      <h2>Nueva Reserva</h2>
+    <form onSubmit={handleSubmit} className="space-y-8">
+      {/* Header */}
+      <div>
+        <h2 className="text-3xl font-bold text-white">Nueva Reserva</h2>
+        <p className="text-slate-400 mt-2">Completa los detalles para crear una nueva reserva</p>
+      </div>
 
-      {error && <div style={styles.error}>{error}</div>}
+      {/* Error Alert */}
+      {error && (
+        <div className="p-4 bg-red-500/20 border border-red-500/50 rounded-lg flex items-start space-x-3 animate-fade-in">
+          <svg className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+          </svg>
+          <p className="text-red-300 text-sm">{error}</p>
+        </div>
+      )}
 
-      <div style={styles.section}>
-        <h3>Fechas</h3>
+      {/* Fechas Section */}
+      <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-lg p-6">
+        <h3 className="text-lg font-bold text-white mb-4">📅 Fechas</h3>
 
-        <div style={styles.row}>
-          <div style={styles.formGroup}>
-            <label htmlFor="checkInDate">Entrada *</label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label htmlFor="checkInDate" className="block text-sm font-medium text-slate-300 mb-2">
+              Fecha de Entrada *
+            </label>
             <input
               id="checkInDate"
               type="date"
@@ -108,12 +123,14 @@ export default function ReservationForm({ onSuccess, onCancel }: ReservationForm
               onChange={(e) => setCheckInDate(e.target.value)}
               min={today}
               required
-              style={styles.input}
+              className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
             />
           </div>
 
-          <div style={styles.formGroup}>
-            <label htmlFor="checkOutDate">Salida *</label>
+          <div>
+            <label htmlFor="checkOutDate" className="block text-sm font-medium text-slate-300 mb-2">
+              Fecha de Salida *
+            </label>
             <input
               id="checkOutDate"
               type="date"
@@ -121,7 +138,7 @@ export default function ReservationForm({ onSuccess, onCancel }: ReservationForm
               onChange={(e) => setCheckOutDate(e.target.value)}
               min={checkInDate || today}
               required
-              style={styles.input}
+              className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
             />
           </div>
         </div>
@@ -130,71 +147,133 @@ export default function ReservationForm({ onSuccess, onCancel }: ReservationForm
           type="button"
           onClick={handleSearchRooms}
           disabled={searchLoading}
-          style={styles.searchButton}
+          className="w-full py-3 px-4 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 disabled:from-slate-600 disabled:to-slate-700 text-white font-bold rounded-lg transition-all duration-200 flex items-center justify-center space-x-2"
         >
-          {searchLoading ? 'Buscando...' : 'Buscar Disponibilidad'}
+          {searchLoading ? (
+            <>
+              <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span>Buscando disponibilidad...</span>
+            </>
+          ) : (
+            <>
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" />
+              </svg>
+              <span>Buscar Disponibilidad</span>
+            </>
+          )}
         </button>
       </div>
 
+      {/* Rooms Selection */}
       {availableRooms.length > 0 && (
-        <div style={styles.section}>
-          <h3>Seleccionar Habitación</h3>
-          <div style={styles.roomsGrid}>
+        <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-lg p-6">
+          <h3 className="text-lg font-bold text-white mb-4">🛏️ Seleccionar Habitación</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {availableRooms.map((room) => (
               <div
                 key={room.id}
                 onClick={() => setSelectedRoomId(room.id)}
-                style={{
-                  ...styles.roomCard,
-                  ...(selectedRoomId === room.id ? styles.roomCardSelected : {}),
-                }}
+                className={`p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 transform hover:scale-105 ${
+                  selectedRoomId === room.id
+                    ? 'border-primary-500 bg-primary-500/20'
+                    : 'border-white/20 bg-white/5 hover:border-white/40 hover:bg-white/10'
+                }`}
               >
-                <p style={styles.roomNumber}>Habitación {room.roomNumber}</p>
-                <p>{room.type}</p>
-                <p>Capacidad: {room.capacity} personas</p>
-                <p style={styles.price}>Total: ${room.totalPrice}</p>
+                <p className="text-lg font-bold text-white mb-2">
+                  🚪 Habitación {room.roomNumber}
+                </p>
+                <div className="space-y-1 text-sm text-slate-300">
+                  <p>
+                    <span className="text-slate-400">Tipo:</span> {room.type}
+                  </p>
+                  <p>
+                    <span className="text-slate-400">Capacidad:</span> {room.capacity} personas
+                  </p>
+                  <p>
+                    <span className="text-slate-400">Precio/noche:</span> ${Number(room.pricePerNight).toFixed(2)}
+                  </p>
+                </div>
+                <p className="text-xl font-bold text-primary-400 mt-3">
+                  Total: ${room.totalPrice}
+                </p>
               </div>
             ))}
           </div>
         </div>
       )}
 
+      {/* Reservation Details */}
       {selectedRoomId && (
-        <div style={styles.section}>
-          <h3>Detalles de la Reserva</h3>
+        <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-lg p-6">
+          <h3 className="text-lg font-bold text-white mb-4">📝 Detalles de la Reserva</h3>
 
-          <div style={styles.formGroup}>
-            <label htmlFor="numberOfGuests">Número de Huéspedes *</label>
-            <input
-              id="numberOfGuests"
-              type="number"
-              value={numberOfGuests}
-              onChange={(e) => setNumberOfGuests(Math.max(1, parseInt(e.target.value) || 1))}
-              min="1"
-              required
-              style={styles.input}
-            />
-          </div>
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="numberOfGuests" className="block text-sm font-medium text-slate-300 mb-2">
+                Número de Huéspedes *
+              </label>
+              <input
+                id="numberOfGuests"
+                type="number"
+                value={numberOfGuests}
+                onChange={(e) => setNumberOfGuests(Math.max(1, parseInt(e.target.value) || 1))}
+                min="1"
+                required
+                className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
+              />
+            </div>
 
-          <div style={styles.formGroup}>
-            <label htmlFor="specialRequests">Solicitudes Especiales</label>
-            <textarea
-              id="specialRequests"
-              value={specialRequests}
-              onChange={(e) => setSpecialRequests(e.target.value)}
-              placeholder="Ej: cuna, piso alto, etc."
-              style={{ ...styles.input, minHeight: '80px' }}
-            />
+            <div>
+              <label htmlFor="specialRequests" className="block text-sm font-medium text-slate-300 mb-2">
+                Solicitudes Especiales
+              </label>
+              <textarea
+                id="specialRequests"
+                value={specialRequests}
+                onChange={(e) => setSpecialRequests(e.target.value)}
+                placeholder="Ej: cuna, piso alto, desayuno adicional, etc."
+                rows={4}
+                className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all resize-none"
+              />
+            </div>
           </div>
         </div>
       )}
 
-      <div style={styles.buttons}>
-        <button type="submit" disabled={isLoading || !selectedRoomId} style={styles.submitButton}>
-          {isLoading ? 'Creando...' : 'Confirmar Reserva'}
+      {/* Action Buttons */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <button
+          type="submit"
+          disabled={isLoading || !selectedRoomId}
+          className="flex-1 py-3 px-4 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 disabled:from-slate-600 disabled:to-slate-700 text-white font-bold rounded-lg transition-all duration-200 flex items-center justify-center space-x-2"
+        >
+          {isLoading ? (
+            <>
+              <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span>Confirmando...</span>
+            </>
+          ) : (
+            <>
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+              </svg>
+              <span>Confirmar Reserva</span>
+            </>
+          )}
         </button>
         {onCancel && (
-          <button type="button" onClick={onCancel} style={styles.cancelButton}>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex-1 py-3 px-4 bg-slate-600/50 hover:bg-slate-600 text-white font-bold rounded-lg transition-all duration-200"
+          >
             Cancelar
           </button>
         )}
@@ -202,102 +281,3 @@ export default function ReservationForm({ onSuccess, onCancel }: ReservationForm
     </form>
   )
 }
-
-const styles = {
-  form: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '2rem',
-  },
-  error: {
-    backgroundColor: '#f8d7da',
-    color: '#721c24',
-    padding: '1rem',
-    borderRadius: '4px',
-    borderLeft: '4px solid #721c24',
-  },
-  section: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '1rem',
-  },
-  row: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: '1rem',
-  },
-  formGroup: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '0.5rem',
-  },
-  input: {
-    padding: '0.75rem',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    fontSize: '1rem',
-    fontFamily: 'inherit',
-  },
-  searchButton: {
-    padding: '0.75rem 1.5rem',
-    backgroundColor: '#17a2b8',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontWeight: 'bold',
-  },
-  roomsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
-    gap: '1rem',
-  },
-  roomCard: {
-    padding: '1rem',
-    border: '2px solid #ddd',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    transition: 'all 0.3s',
-  },
-  roomCardSelected: {
-    borderColor: '#28a745',
-    backgroundColor: '#f0fff4',
-  },
-  roomNumber: {
-    fontSize: '1.1rem',
-    fontWeight: 'bold',
-    margin: '0 0 0.5rem 0',
-  },
-  price: {
-    fontSize: '1.2rem',
-    fontWeight: 'bold',
-    color: '#28a745',
-    margin: '0.5rem 0 0 0',
-  },
-  buttons: {
-    display: 'flex',
-    gap: '1rem',
-    marginTop: '1rem',
-  },
-  submitButton: {
-    flex: 1,
-    padding: '0.75rem',
-    backgroundColor: '#28a745',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    fontSize: '1rem',
-    fontWeight: 'bold',
-    cursor: 'pointer',
-  },
-  cancelButton: {
-    flex: 1,
-    padding: '0.75rem',
-    backgroundColor: '#6c757d',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    fontSize: '1rem',
-    cursor: 'pointer',
-  },
-} as const

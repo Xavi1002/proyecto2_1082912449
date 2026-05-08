@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import ProtectedRoute from '../components/ProtectedRoute'
+import RoleBasedAccess, { useHasRole, useRolePermissions } from '../components/RoleBasedAccess'
 import ReservationForm from '../components/ReservationForm'
 import ReservationList from '../components/ReservationList'
 import { api } from '../lib/api'
@@ -12,6 +13,8 @@ export default function ReservationsPage() {
     totalRevenue: 0,
   })
   const [refresh, setRefresh] = useState(0)
+  const isStaff = useHasRole(['SuperAdmin', 'Recepción'])
+  const permissions = useRolePermissions()
 
   useEffect(() => {
     fetchStatistics()
@@ -34,53 +37,74 @@ export default function ReservationsPage() {
   return (
     <ProtectedRoute>
       <div style={styles.container}>
+        {/* Encabezado diferenciado por rol */}
         <div style={styles.header}>
-          <h1>Mis Reservas</h1>
-          <button onClick={() => setShowForm(!showForm)} style={styles.createButton}>
-            {showForm ? 'Cancelar' : 'Nueva Reserva'}
-          </button>
+          <div>
+            <h1>{isStaff ? 'Gestión de Reservas' : 'Mis Reservas'}</h1>
+            <p style={styles.subtitle}>
+              {permissions.isSuperAdmin && 'SuperAdmin - Acceso total a todas las reservas'}
+              {permissions.isReception && 'Recepción - Gestión de reservas del hotel'}
+              {permissions.isClient && 'Cliente - Visualización de mis reservas'}
+            </p>
+          </div>
+          
+          {/* Botón para clientes */}
+          <RoleBasedAccess allowedRoles={['Cliente']}>
+            <button onClick={() => setShowForm(!showForm)} style={styles.createButton}>
+              {showForm ? 'Cancelar' : 'Nueva Reserva'}
+            </button>
+          </RoleBasedAccess>
         </div>
 
         {/* Estadísticas */}
-        <div style={styles.statsGrid}>
-          <div style={styles.statCard}>
-            <p style={styles.statLabel}>Total de Reservas</p>
-            <p style={styles.statValue}>{statistics.total}</p>
-          </div>
-          <div style={styles.statCard}>
-            <p style={styles.statLabel}>Confirmadas</p>
-            <p style={styles.statValue}>
-              {statistics.byStatus['Confirmada'] || 0}
-            </p>
-          </div>
-          <div style={styles.statCard}>
-            <p style={styles.statLabel}>Pendientes</p>
-            <p style={styles.statValue}>
-              {statistics.byStatus['Pendiente'] || 0}
-            </p>
-          </div>
-          <div style={styles.statCard}>
-            <p style={styles.statLabel}>Ingresos Totales</p>
-            <p style={styles.statValue}>
-              ${parseFloat(statistics.totalRevenue.toString()).toFixed(2)}
-            </p>
-          </div>
-        </div>
-
-        {/* Formulario */}
-        {showForm && (
-          <div style={styles.formContainer}>
-            <ReservationForm
-              onSuccess={handleReservationSuccess}
-              onCancel={() => setShowForm(false)}
-            />
+        {permissions.canViewAllReservations && (
+          <div style={styles.statsGrid}>
+            <div style={styles.statCard}>
+              <p style={styles.statLabel}>Total de Reservas</p>
+              <p style={styles.statValue}>{statistics.total}</p>
+            </div>
+            <div style={styles.statCard}>
+              <p style={styles.statLabel}>Confirmadas</p>
+              <p style={styles.statValue}>
+                {statistics.byStatus['Confirmada'] || 0}
+              </p>
+            </div>
+            <div style={styles.statCard}>
+              <p style={styles.statLabel}>Pendientes</p>
+              <p style={styles.statValue}>
+                {statistics.byStatus['Pendiente'] || 0}
+              </p>
+            </div>
+            <div style={styles.statCard}>
+              <p style={styles.statLabel}>Ingresos Totales</p>
+              <p style={styles.statValue}>
+                ${parseFloat(statistics.totalRevenue.toString()).toFixed(2)}
+              </p>
+            </div>
           </div>
         )}
 
+        {/* Formulario para clientes */}
+        <RoleBasedAccess allowedRoles={['Cliente']}>
+          {showForm && (
+            <div style={styles.formContainer}>
+              <ReservationForm
+                onSuccess={handleReservationSuccess}
+                onCancel={() => setShowForm(false)}
+              />
+            </div>
+          )}
+        </RoleBasedAccess>
+
         {/* Lista de Reservas */}
         <div style={styles.listContainer}>
-          <h2>Tus Reservas</h2>
-          <ReservationList key={refresh} myReservationsOnly={true} />
+          <h2>
+            {isStaff ? 'Todas las Reservas del Hotel' : 'Tus Reservas'}
+          </h2>
+          <ReservationList 
+            key={refresh} 
+            myReservationsOnly={permissions.isClient}
+          />
         </div>
       </div>
     </ProtectedRoute>

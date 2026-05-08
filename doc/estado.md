@@ -10,12 +10,22 @@
 | Autenticación        | ✅ Completado  | JWT, roles, registro, login |
 | CRUD Habitaciones    | ✅ Completado  | Crear, leer, actualizar, eliminar |
 | Reservas             | ✅ Completado  | Sistema de reservas con disponibilidad |
-| Clientes             | ⏳ Pendiente   | Gestión de clientes |
-| Dashboard            | 🔄 En progreso| Panel de control |
+| Dashboard            | ✅ Completado  | Panel de control con estadísticas |
 | Buscador             | ✅ Completado | Búsqueda de disponibilidad en reservas |
-| UI/UX                | 🔄 En progreso| Componentes base |
+| UI/UX                | 🔄 En progreso| Componentes base modernizados |
 
 ## Cambios Recientes
+
+### Dashboard - Panel de Control (Completado)
+- ✅ Componente DashboardStats con 6 tarjetas de estadísticas
+- ✅ Componente OccupancyChart con gráficos de ocupación
+- ✅ Componente AvailableRooms con filtrado por estado
+- ✅ Componente UpcomingReservations con alertas de urgencia
+- ✅ Página /dashboard con layout responsivo
+- ✅ Auto-actualización cada 5 minutos
+- ✅ Integración en NavBar y página de inicio
+- ✅ Indicadores visuales (HOY, PRONTO, PRÓXIMA)
+- ✅ Diseño moderno con colores y tarjetas
 
 ### Sistema de Reservas (Completado)
 - ✅ Modelo Reservation con enums para estados
