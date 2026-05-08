@@ -1,0 +1,159 @@
+# Estado de Ejecución — HotelManager Pro
+
+## 📋 Información del Proyecto
+
+| Campo | Valor |
+|-------|-------|
+| **Nombre del Proyecto** | HotelManager Pro — Sistema de Gestión Hotelera |
+| **Versión** | 1.0 |
+| **Estudiante** | Xavi Jiménez |
+| **Documento de Identidad** | 1082912449 |
+| **Curso** | Lógica y Programación — SIST0200 |
+| **Fecha de Inicio** | Mayo 2026 |
+| **Archivos de Referencia** | `PLAN_HOTELMANAGER (1).md` |
+| **Estado General** | Pendiente de Inicio |
+
+---
+
+## 📊 Dashboard de Fases
+
+| # | Fase | Rol Asignado | Estado | Inicio | Cierre | Resumen |
+|---|------|--------------|--------|--------|--------|---------|
+| 1 | Bootstrap, Login y `dataService` base | Ingeniero Fullstack Senior | Pendiente | — | — | — |
+| 2 | Dashboard, Layout y bootstrap | Diseñador Frontend + Ingeniero de Sistemas | Pendiente | — | — | — |
+| 3 | Gestión de Habitaciones | Ingeniero Fullstack | Pendiente | — | — | — |
+| 4 | Gestión de Clientes | Ingeniero Fullstack | Pendiente | — | — | — |
+| 5 | Sistema de Reservas | Ingeniero Fullstack Senior | Pendiente | — | — | — |
+| 6 | Administración y Pulido Final | Diseñador Frontend + Ingeniero Fullstack | Pendiente | — | — | — |
+
+---
+
+## 🎯 Detalle de Fases
+
+### Fase 1: Bootstrap, Login y `dataService` base
+**Rol Asignado:** Ingeniero Fullstack Senior — Arquitecto del sistema y seguridad
+
+**Tareas:**
+1. Instalar: `bcryptjs jose @supabase/supabase-js @vercel/blob pg @types/bcryptjs @types/pg`
+2. Crear proyecto en Supabase. Blob Store privado. Variables de entorno.
+3. Crear `data/seed.json` con SuperAdmin y 4 habitaciones demo.
+4. Crear `supabase/migrations/0001_init_users.sql`.
+5. Crear `lib/supabase.ts`, `lib/blobAudit.ts` (getBlobToken lazy, withFileLock, get() del SDK), `lib/pgMigrate.ts`, `lib/seedReader.ts`.
+6. Crear `lib/dataService.ts` con `getSystemMode`, auth de usuarios y `recordAudit`.
+7. Crear `lib/auth.ts`, `lib/withAuth.ts`, `lib/withRole.ts`. JWT incluye `role`.
+8. Crear `next.config.ts` con headers `no-store`.
+9. API Routes: bootstrap, diagnose, mode, login, logout, me, change-password.
+10. Crear `app/login/page.tsx` con la identidad visual de HotelManager Pro: layout dividido, panel azul oscuro, formulario limpio. Sin link de registro.
+11. `npm run typecheck` sin errores. Probar: login SuperAdmin del seed → cookie → modo seed.
+
+---
+
+### Fase 2: Dashboard, Layout y bootstrap
+**Rol Asignado:** Diseñador Frontend Obsesivo + Ingeniero de Sistemas
+
+**Tareas:**
+1. Crear componentes UI base: Button, Card, Badge, Toast, Modal, EmptyState, Table.
+2. Configurar variables CSS paleta azul en `globals.css`. Inter con `next/font`.
+3. Crear `AppLayout.tsx`: sidebar dinámico por rol. SuperAdmin: todo. Recepcionista: Dashboard, Habitaciones, Clientes, Reservas, Perfil. Cliente: solo Mis Reservas y Perfil.
+4. Crear `/admin/db-setup/page.tsx` con diagnóstico y bootstrap.
+5. Crear `SeedModeBanner.tsx`.
+6. Crear `middleware.ts`: cliente solo puede acceder a `/my-reservations` y `/profile` — cualquier otra ruta privada → redirect silencioso.
+7. Crear `GET /api/dashboard`: KPIs de habitaciones y reservas del día. En modo seed: estructura vacía con datos de demo.
+8. Crear `app/dashboard/page.tsx`: 4 `KpiCard` + listado de reservas del día.
+9. Crear `app/my-reservations/page.tsx` (Cliente): placeholder con empty state.
+10. Probar: bootstrap → 4 habitaciones demo en Supabase → tres roles con dashboards distintos.
+
+---
+
+### Fase 3: Gestión de Habitaciones
+**Rol Asignado:** Ingeniero Fullstack — CRUD de habitaciones con control de acceso
+
+**Tareas:**
+1. Crear `supabase/migrations/0002_init_rooms.sql`. Aplicar desde `/admin/db-setup`. El bootstrap inserta las 4 habitaciones demo.
+2. Agregar tipos `Room`, `CreateRoomRequest`, `UpdateRoomRequest` y schemas Zod.
+3. Extender `dataService`: `getRooms` (con filtros), `getRoomById`, `createRoom`, `updateRoom`, `deleteRoom` (verifica RN-08 antes), `getAvailableRooms`.
+4. API Routes: `GET/POST /api/rooms` (POST solo superadmin), `GET/PUT/DELETE /api/rooms/[id]` (PUT/DELETE solo superadmin), `PATCH /api/rooms/[id]/status`, `GET /api/rooms/available?checkIn=&checkOut=`.
+5. Crear `app/rooms/page.tsx`: cuadrícula de `RoomCard` con filtros por tipo y estado. Botón "Nueva habitación" solo visible para SuperAdmin.
+6. Crear `app/rooms/new/page.tsx` y `[id]/edit/page.tsx` (SuperAdmin).
+7. Verificar RN-08: intentar eliminar habitación con reservas activas → 409.
+8. Verificar RN-03: recepcionista intenta POST /api/rooms → 403.
+
+---
+
+### Fase 4: Gestión de Clientes
+**Rol Asignado:** Ingeniero Fullstack — Registro de clientes y portal de huéspedes
+
+**Tareas:**
+1. Crear `supabase/migrations/0003_init_clients.sql`. Aplicar desde `/admin/db-setup`.
+2. Agregar tipos `Client`, `ClientWithReservations`, `CreateClientRequest` y schemas Zod (RN-05).
+3. Extender `dataService`: `getClients`, `getClientById` (con sus reservas), `createClient`, `updateClient`, `deleteClient` (SuperAdmin). Búsqueda con ILIKE.
+4. Al crear un cliente, opcionalmente se puede crear también un usuario con role='cliente' para darle acceso al portal. El user_id queda vinculado en clients. Contraseña temporal con must_change_password=true.
+5. API Routes: `GET/POST /api/clients`, `GET /api/clients/search?q=`, `GET/PUT/DELETE /api/clients/[id]`.
+6. Crear `app/clients/page.tsx`: listado con `ClientSearchInput` con debounce 300ms.
+7. Crear `app/clients/[id]/page.tsx`: perfil del cliente con historial de reservas.
+8. Verificar RN-05: email o documento duplicado → 409 con mensaje diferenciado.
+9. Verificar RN-07: el cliente autenticado no puede ver el perfil de otro cliente.
+
+---
+
+### Fase 5: Sistema de Reservas
+**Rol Asignado:** Ingeniero Fullstack Senior — Operación más crítica del sistema
+
+**Tareas:**
+1. Crear `supabase/migrations/0004_init_reservations.sql`. Aplicar desde `/admin/db-setup`.
+2. Extender `dataService`: `createReservation` (secuencia completa de sección 10.2), `getReservations`, `getMyReservations`, `cancelReservation`.
+3. API Routes: `GET/POST /api/reservations`, `GET /api/reservations/my` (cliente), `GET /api/reservations/[id]`, `POST /api/reservations/[id]/cancel`.
+4. Crear `app/reservations/new/page.tsx`: `ReservationForm` con `ClientSearchInput`, `DateRangePicker`, selector de habitaciones disponibles (se filtra dinámicamente al cambiar fechas), total calculado automáticamente.
+5. Crear `app/reservations/page.tsx` (Recepcionista/SuperAdmin): listado con filtros.
+6. Conectar `app/my-reservations/page.tsx` con datos reales del cliente autenticado.
+7. Verificar RN-02: crear dos reservas solapadas para la misma habitación → 409.
+8. Verificar RN-04: al crear → habitación "ocupada"; al cancelar → habitación "disponible".
+9. Verificar RN-09: snapshot del precio — cambiar el precio de la habitación y verificar que las reservas anteriores conservan el precio original.
+
+---
+
+### Fase 6: Administración y Pulido Final
+**Rol Asignado:** Diseñador Frontend Obsesivo + Ingeniero Fullstack
+
+**Tareas:**
+1. Gestión de usuarios: POST genera contraseña temporal, must_change_password=true, retorna en claro una sola vez. Login → /profile si must_change_password.
+2. Crear `app/admin/users/page.tsx` y `app/admin/audit/page.tsx`.
+3. Empty states: dashboard sin reservas hoy, habitaciones sin filtros disponibles, sin clientes registrados, sin reservas para el cliente.
+4. Manejo de errores: 401, 403, 409 (solapamiento con fechas del conflicto), 409 (habitación con reservas al eliminar), 409 (email/documento duplicado diferenciados), 500.
+5. Verificar el portal del cliente: login → /my-reservations → intentar ir a /rooms → redirect silencioso.
+6. `npm run typecheck`, `npm run lint`, `npm run build` — cero errores.
+7. Deploy en Vercel con todas las variables de entorno.
+8. Probar en producción: SuperAdmin crea habitaciones → crea cliente con cuenta digital → cliente hace login → ve sus reservas → Recepcionista crea reserva → habitación cambia a ocupada → dashboard actualizado.
+
+---
+
+## 📖 Leyenda de Estados
+
+| Estado | Símbolo | Descripción |
+|--------|---------|-------------|
+| **Pendiente** | ⬜ | La fase no ha iniciado. Depende de fases previas o recursos. |
+| **En progreso** | 🟦 | La fase está actualmente en ejecución. Se están completando tareas. |
+| **Completada** | ✅ | La fase finalizó correctamente. Todas las tareas cumplidas. Testing exitoso. |
+| **Bloqueada** | 🔴 | La fase no puede continuar debido a obstáculos o dependencias sin resolver. |
+| **Pausada** | ⏸️ | La fase fue suspendida temporalmente. Se reanudará posteriormente. |
+
+---
+
+## 📝 Historial de Ejecución
+
+> **Nota:** Este es un registro append-only. Los eventos se agregan al final sin modificar anteriores.
+
+### Entrada 1
+- **Fecha:** 2026-05-08
+- **Hora:** 09:00
+- **Fase:** Sistema General
+- **Evento:** Inicialización del documento de estado
+- **Detalle:** Se creó el archivo `ESTADO_EJECUCION_HOTELMANAGER.md` basado en el Plan Maestro. Todas las fases inician en estado "Pendiente". El documento está listo para el inicio formal de la Fase 1.
+- **Responsable:** Ingeniero de Proyectos
+- **Notas:** —
+
+---
+
+**Documento creado:** 2026-05-08  
+**Estado inicial:** Listo para Fase 1  
+**Próxima revisión:** Después de completar Fase 1  
