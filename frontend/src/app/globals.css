@@ -1,0 +1,83 @@
+/* src/app/globals.css
+   Estilos globales y variables CSS de HotelManager Pro */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Paleta de colores primaria */
+  --color-primary: #1D4ED8; /* Azul primario */
+  --color-primary-dark: #1E40AF;
+  --color-primary-light: #DBEAFE;
+
+  /* Fondos */
+  --color-background: #F8FAFC;
+  --color-surface: #FFFFFF;
+
+  /* Texto */
+  --color-text: #0F172A;
+  --color-text-secondary: #64748B;
+
+  /* Estados de habitaciones */
+  --color-available: #16A34A;
+  --color-available-bg: #F0FDF4;
+  --color-occupied: #DC2626;
+  --color-occupied-bg: #FEF2F2;
+  --color-maintenance: #D97706;
+  --color-maintenance-bg: #FFFBEB;
+
+  /* Estados de reservas */
+  --color-reservation-active: #1D4ED8;
+  --color-reservation-active-bg: #DBEAFE;
+  --color-reservation-cancelled: #DC2626;
+  --color-reservation-cancelled-bg: #FEF2F2;
+
+  /* Bordes */
+  --color-border: #E2E8F0;
+
+  /* Banner de modo seed */
+  --color-seed-bg: #FEF3C7;
+  --color-seed-text: #92400E;
+  --color-seed-border: #F59E0B;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-text);
+}
+
+/* Clases de utilidad para badges de estado */
+.badge-available {
+  @apply bg-green-50 text-green-700 border border-green-200;
+}
+
+.badge-occupied {
+  @apply bg-red-50 text-red-700 border border-red-200;
+}
+
+.badge-maintenance {
+  @apply bg-amber-50 text-amber-700 border border-amber-200;
+}
+
+.badge-active {
+  @apply bg-blue-50 text-blue-700 border border-blue-200;
+}
+
+.badge-cancelled {
+  @apply bg-red-50 text-red-700 border border-red-200;
+}
+
+/* Banner de modo seed */
+.seed-mode-banner {
+  @apply bg-yellow-100 border border-yellow-500 text-yellow-800 px-4 py-3 rounded;
+}
+
+/* Transiciones suaves */
+.transition-smooth {
+  @apply transition-all duration-200 ease-out;
+}
