@@ -19,7 +19,7 @@
 
 | # | Fase | Rol Asignado | Estado | Inicio | Cierre | Resumen |
 |---|------|--------------|--------|--------|--------|---------|
-| 1 | Bootstrap, Login y `dataService` base | Ingeniero Fullstack Senior | ✅ Completada | 11 May 2026 | 11 May 2026 | Sistemas de auth con JWT, dataService centralizado, APIs base, login con diseño visual |
+| 1 | Bootstrap, Login y `dataService` base | Ingeniero Fullstack Senior | ✅ Completada | 11 May 2026 | 14 May 2026 | Sistemas de auth con JWT, dataService centralizado, APIs base, login con diseño visual |
 | 2 | Dashboard, Layout y bootstrap | Diseñador Frontend + Ingeniero de Sistemas | Pendiente | — | — | — |
 | 3 | Gestión de Habitaciones | Ingeniero Fullstack | Pendiente | — | — | — |
 | 4 | Gestión de Clientes | Ingeniero Fullstack | Pendiente | — | — | — |
