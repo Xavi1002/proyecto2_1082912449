@@ -1,20 +1,16 @@
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import ProtectedRoute from '../components/ProtectedRoute'
-import RoleBasedAccess, { useHasRole, useRolePermissions } from '../components/RoleBasedAccess'
-import ReservationForm from '../components/ReservationForm'
 import ReservationList from '../components/ReservationList'
 import { api } from '../lib/api'
 
 export default function ReservationsPage() {
-  const [showForm, setShowForm] = useState(false)
   const [statistics, setStatistics] = useState({
     total: 0,
-    byStatus: {},
+    byStatus: {} as Record<string, number>,
     totalRevenue: 0,
   })
   const [refresh, setRefresh] = useState(0)
-  const isStaff = useHasRole(['SuperAdmin', 'Recepción'])
-  const permissions = useRolePermissions()
 
   useEffect(() => {
     fetchStatistics()
@@ -29,82 +25,48 @@ export default function ReservationsPage() {
     }
   }
 
-  const handleReservationSuccess = () => {
-    setShowForm(false)
-    setRefresh((prev) => prev + 1)
-  }
-
   return (
-    <ProtectedRoute>
+    <ProtectedRoute requiredRoles={['SuperAdmin', 'Recepción']}>
       <div style={styles.container}>
-        {/* Encabezado diferenciado por rol */}
         <div style={styles.header}>
           <div>
-            <h1>{isStaff ? 'Gestión de Reservas' : 'Mis Reservas'}</h1>
-            <p style={styles.subtitle}>
-              {permissions.isSuperAdmin && 'SuperAdmin - Acceso total a todas las reservas'}
-              {permissions.isReception && 'Recepción - Gestión de reservas del hotel'}
-              {permissions.isClient && 'Cliente - Visualización de mis reservas'}
-            </p>
+            <h1>Gestión de Reservas</h1>
+            <p style={styles.subtitle}>Recepción y SuperAdmin administran las reservas del hotel.</p>
           </div>
-          
-          {/* Botón para clientes */}
-          <RoleBasedAccess allowedRoles={['Cliente']}>
-            <button onClick={() => setShowForm(!showForm)} style={styles.createButton}>
-              {showForm ? 'Cancelar' : 'Nueva Reserva'}
-            </button>
-          </RoleBasedAccess>
+
+          <Link href="/reservations/new" style={styles.createButton}>
+            Nueva Reserva
+          </Link>
         </div>
 
-        {/* Estadísticas */}
-        {permissions.canViewAllReservations && (
-          <div style={styles.statsGrid}>
-            <div style={styles.statCard}>
-              <p style={styles.statLabel}>Total de Reservas</p>
-              <p style={styles.statValue}>{statistics.total}</p>
-            </div>
-            <div style={styles.statCard}>
-              <p style={styles.statLabel}>Confirmadas</p>
-              <p style={styles.statValue}>
-                {statistics.byStatus['Confirmada'] || 0}
-              </p>
-            </div>
-            <div style={styles.statCard}>
-              <p style={styles.statLabel}>Pendientes</p>
-              <p style={styles.statValue}>
-                {statistics.byStatus['Pendiente'] || 0}
-              </p>
-            </div>
-            <div style={styles.statCard}>
-              <p style={styles.statLabel}>Ingresos Totales</p>
-              <p style={styles.statValue}>
-                ${parseFloat(statistics.totalRevenue.toString()).toFixed(2)}
-              </p>
-            </div>
+        <div style={styles.statsGrid}>
+          <div style={styles.statCard}>
+            <p style={styles.statLabel}>Total de Reservas</p>
+            <p style={styles.statValue}>{statistics.total}</p>
           </div>
-        )}
+          <div style={styles.statCard}>
+            <p style={styles.statLabel}>Confirmadas</p>
+            <p style={styles.statValue}>{statistics.byStatus['Confirmada'] || 0}</p>
+          </div>
+          <div style={styles.statCard}>
+            <p style={styles.statLabel}>Pendientes</p>
+            <p style={styles.statValue}>{statistics.byStatus['Pendiente'] || 0}</p>
+          </div>
+          <div style={styles.statCard}>
+            <p style={styles.statLabel}>Ingresos Totales</p>
+            <p style={styles.statValue}>
+              {new Intl.NumberFormat('es-CO', {
+                style: 'currency',
+                currency: 'COP',
+                maximumFractionDigits: 0,
+              }).format(statistics.totalRevenue)}
+            </p>
+          </div>
+        </div>
 
-        {/* Formulario para clientes */}
-        <RoleBasedAccess allowedRoles={['Cliente']}>
-          {showForm && (
-            <div style={styles.formContainer}>
-              <ReservationForm
-                onSuccess={handleReservationSuccess}
-                onCancel={() => setShowForm(false)}
-              />
-            </div>
-          )}
-        </RoleBasedAccess>
-
-        {/* Lista de Reservas */}
         <div style={styles.listContainer}>
-          <h2>
-            {isStaff ? 'Todas las Reservas del Hotel' : 'Tus Reservas'}
-          </h2>
-          <ReservationList 
-            key={refresh} 
-            myReservationsOnly={permissions.isClient}
-          />
+          <h2>Reservas del Hotel</h2>
+          <ReservationList key={refresh} myReservationsOnly={false} />
         </div>
       </div>
     </ProtectedRoute>
@@ -123,7 +85,15 @@ const styles = {
     alignItems: 'center',
     marginBottom: '2rem',
   },
+  subtitle: {
+    marginTop: '0.25rem',
+    color: '#64748b',
+    fontSize: '0.95rem',
+  },
   createButton: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
     padding: '0.75rem 1.5rem',
     backgroundColor: '#28a745',
     color: 'white',
@@ -132,6 +102,7 @@ const styles = {
     cursor: 'pointer',
     fontWeight: 'bold',
     fontSize: '1rem',
+    textDecoration: 'none',
   },
   statsGrid: {
     display: 'grid',
@@ -156,13 +127,6 @@ const styles = {
     fontWeight: 'bold',
     margin: '0.5rem 0 0 0',
     color: '#333',
-  },
-  formContainer: {
-    backgroundColor: 'white',
-    padding: '2rem',
-    borderRadius: '8px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-    marginBottom: '2rem',
   },
   listContainer: {
     backgroundColor: 'white',

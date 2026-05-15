@@ -370,9 +370,6 @@ const styles: Record<string, React.CSSProperties> = {
   },
   bodyRow: {
     borderBottom: '1px solid #e2e8f0',
-    '&:hover': {
-      backgroundColor: '#f8fafc',
-    },
   },
   td: {
     padding: '1rem',

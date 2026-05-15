@@ -21,6 +21,7 @@ class Room extends Model {
   public type!: RoomType
   public status!: RoomStatus
   public pricePerNight!: number
+  public capacity!: number
   public createdAt!: Date
   public updatedAt!: Date
 }
@@ -52,6 +53,14 @@ Room.init(
       allowNull: false,
       validate: {
         min: 0.01,
+      },
+    },
+    capacity: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 1,
+      validate: {
+        min: 1,
       },
     },
   },

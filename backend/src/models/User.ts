@@ -9,6 +9,7 @@ class User extends Model {
   public password!: string
   public roleId!: number
   public isActive!: boolean
+  public mustChangePassword!: boolean
   public createdAt!: Date
   public updatedAt!: Date
 
@@ -51,6 +52,12 @@ User.init(
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: true,
+    },
+    mustChangePassword: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      comment: 'Debe cambiar contraseña en el siguiente inicio de sesión',
     },
   },
   {

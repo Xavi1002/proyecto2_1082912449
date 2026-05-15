@@ -1,5 +1,6 @@
 import { DataTypes, Model } from 'sequelize'
 import sequelize from '../config/database'
+import Client from './Client'
 import User from './User'
 import Room from './Room'
 
@@ -13,11 +14,13 @@ export enum ReservationStatus {
 class Reservation extends Model {
   public id!: number
   public userId!: number
+  public clientId!: number | null
   public roomId!: number
   public checkInDate!: Date
   public checkOutDate!: Date
   public numberOfGuests!: number
   public totalPrice!: number
+  public pricePerNightSnapshot!: number
   public status!: ReservationStatus
   public specialRequests!: string
   public createdAt!: Date
@@ -40,6 +43,14 @@ Reservation.init(
       allowNull: false,
       references: {
         model: User,
+        key: 'id',
+      },
+    },
+    clientId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: Client,
         key: 'id',
       },
     },
@@ -74,6 +85,11 @@ Reservation.init(
       allowNull: false,
       comment: 'Precio total de la reserva',
     },
+    pricePerNightSnapshot: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+      comment: 'Snapshot del precio por noche al momento de reservar',
+    },
     status: {
       type: DataTypes.ENUM(...Object.values(ReservationStatus)),
       allowNull: false,
@@ -101,6 +117,11 @@ Reservation.belongsTo(User, {
 Reservation.belongsTo(Room, {
   foreignKey: 'roomId',
   as: 'room',
+})
+
+Reservation.belongsTo(Client, {
+  foreignKey: 'clientId',
+  as: 'client',
 })
 
 export default Reservation

@@ -1,5 +1,6 @@
 import {
   ReactNode,
+  createElement,
   createContext,
   useCallback,
   useContext,
@@ -14,6 +15,7 @@ export interface User {
   name: string
   email: string
   role: string
+  mustChangePassword?: boolean
 }
 
 export interface AuthContextType {
@@ -34,11 +36,23 @@ interface AuthProviderProps {
 const STORAGE_KEY = 'auth_token'
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+const setRoleCookie = (role: string | null) => {
+  if (typeof document === 'undefined') return
+
+  if (!role) {
+    document.cookie = 'auth_role=; path=/; max-age=0; SameSite=Lax'
+    return
+  }
+
+  document.cookie = `auth_role=${encodeURIComponent(role)}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`
+}
+
 const normalizeUser = (payload: any): User => ({
   id: payload.id,
   name: payload.name,
   email: payload.email,
   role: typeof payload.role === 'string' ? payload.role : payload.role?.name || '',
+  mustChangePassword: Boolean(payload.mustChangePassword),
 })
 
 export function AuthProvider({ children }: AuthProviderProps) {
@@ -51,6 +65,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setUser(null)
     localStorage.removeItem(STORAGE_KEY)
     setAuthToken(null)
+    setRoleCookie(null)
   }, [])
 
   const getCurrentUser = useCallback(async () => {
@@ -63,7 +78,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     setAuthToken(storedToken)
     const response = await api.get('/auth/me')
-    setUser(normalizeUser(response.data))
+    const normalized = normalizeUser(response.data)
+    setUser(normalized)
+    setRoleCookie(normalized.role)
   }, [token])
 
   useEffect(() => {
@@ -79,13 +96,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setToken(storedToken)
         setAuthToken(storedToken)
         const response = await api.get('/auth/me')
-        setUser(normalizeUser(response.data))
+        const normalized = normalizeUser(response.data)
+        setUser(normalized)
+        setRoleCookie(normalized.role)
       } catch (error) {
         console.error('Error restoring session:', error)
         localStorage.removeItem(STORAGE_KEY)
         setAuthToken(null)
         setToken(null)
         setUser(null)
+        setRoleCookie(null)
       } finally {
         setIsLoading(false)
       }
@@ -93,6 +113,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     restoreSession()
   }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    const handleSessionExpired = () => {
+      logout()
+      setIsLoading(false)
+    }
+
+    window.addEventListener('hm:auth-expired', handleSessionExpired)
+
+    return () => {
+      window.removeEventListener('hm:auth-expired', handleSessionExpired)
+    }
+  }, [logout])
 
   const register = useCallback(
     async (name: string, email: string, password: string, role = 'Cliente') => {
@@ -110,6 +147,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(userData)
       localStorage.setItem(STORAGE_KEY, newToken)
       setAuthToken(newToken)
+      setRoleCookie(userData.role)
     },
     []
   )
@@ -123,6 +161,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setUser(userData)
     localStorage.setItem(STORAGE_KEY, newToken)
     setAuthToken(newToken)
+    setRoleCookie(userData.role)
   }, [])
 
   const value = useMemo<AuthContextType>(
@@ -139,7 +178,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     [getCurrentUser, isLoading, login, logout, register, token, user]
   )
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  return createElement(AuthContext.Provider, { value }, children)
 }
 
 export const useAuth = (): AuthContextType => {

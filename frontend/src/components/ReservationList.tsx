@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { api } from '../lib/api'
 
 interface Reservation {
@@ -7,7 +7,11 @@ interface Reservation {
   checkOutDate: string
   numberOfGuests: number
   totalPrice: number
+  pricePerNightSnapshot?: number
   status: string
+    client?: {
+      name: string
+    }
   room?: {
     roomNumber: string
     type: string
@@ -31,14 +35,10 @@ export default function ReservationList({ myReservationsOnly = true }: Reservati
   const [error, setError] = useState('')
   const [filter, setFilter] = useState({ status: '' })
 
-  useEffect(() => {
-    fetchReservations()
-  }, [filter, myReservationsOnly])
-
-  const fetchReservations = async () => {
+  const fetchReservations = useCallback(async () => {
     try {
       setIsLoading(true)
-      const endpoint = myReservationsOnly ? '/reservations/my-reservations' : '/reservations'
+      const endpoint = myReservationsOnly ? '/reservations/my' : '/reservations'
       const params = new URLSearchParams()
       if (filter.status) params.append('status', filter.status)
 
@@ -50,9 +50,17 @@ export default function ReservationList({ myReservationsOnly = true }: Reservati
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [filter.status, myReservationsOnly])
+
+  useEffect(() => {
+    void fetchReservations()
+  }, [fetchReservations])
 
   const handleCancel = async (reservationId: number) => {
+    if (myReservationsOnly) {
+      return
+    }
+
     if (window.confirm('¿Está seguro que desea cancelar esta reserva?')) {
       try {
         await api.delete(`/reservations/${reservationId}`)
@@ -123,7 +131,11 @@ export default function ReservationList({ myReservationsOnly = true }: Reservati
           <svg className="w-16 h-16 mx-auto text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
-          <p className="text-slate-400">No hay reservas registradas</p>
+          <p className="text-slate-400">
+            {myReservationsOnly
+              ? 'Aún no tienes reservas. Contacta con recepción para hacer tu reserva.'
+              : 'No hay reservas con los filtros aplicados.'}
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -166,6 +178,12 @@ export default function ReservationList({ myReservationsOnly = true }: Reservati
 
                   {/* Info */}
                   <div className="space-y-2">
+                    {reservation.client?.name && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-400">Cliente:</span>
+                        <span className="text-white font-medium">{reservation.client.name}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-sm">
                       <span className="text-slate-400">Tipo:</span>
                       <span className="text-white font-medium">{reservation.room?.type}</span>
@@ -176,13 +194,19 @@ export default function ReservationList({ myReservationsOnly = true }: Reservati
                     </div>
                     <div className="flex justify-between text-sm pt-2 border-t border-white/10">
                       <span className="text-slate-400 font-medium">Total:</span>
-                      <span className="text-primary-400 font-bold">${parseFloat(reservation.totalPrice.toString()).toFixed(2)}</span>
+                      <span className="text-primary-400 font-bold">
+                        {new Intl.NumberFormat('es-CO', {
+                          style: 'currency',
+                          currency: 'COP',
+                          maximumFractionDigits: 0,
+                        }).format(Number(reservation.totalPrice))}
+                      </span>
                     </div>
                   </div>
                 </div>
 
                 {/* Footer */}
-                {reservation.status !== 'Cancelada' && reservation.status !== 'Completada' && (
+                {!myReservationsOnly && reservation.status !== 'Cancelada' && reservation.status !== 'Completada' && (
                   <div className="p-4 border-t border-white/10">
                     <button
                       onClick={() => handleCancel(reservation.id)}

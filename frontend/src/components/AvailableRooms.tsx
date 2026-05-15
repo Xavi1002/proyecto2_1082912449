@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { api } from '../lib/api'
 
 interface Room {
@@ -17,45 +17,35 @@ export default function AvailableRooms() {
   const [filter, setFilter] = useState('Disponible')
 
   useEffect(() => {
+    const fetchRooms = async () => {
+      try {
+        setLoading(true)
+        const response = await api.get('/rooms', {
+          params: {
+            status: filter,
+          },
+        })
+        setRooms(response.data.rooms || [])
+        setError('')
+      } catch (err) {
+        console.error('Error al cargar habitaciones:', err)
+        setError('Error al cargar habitaciones')
+      } finally {
+        setLoading(false)
+      }
+    }
+
     fetchRooms()
   }, [filter])
 
-  const fetchRooms = async () => {
-    try {
-      setLoading(true)
-      const response = await api.get('/rooms', {
-        params: {
-          status: filter,
-        },
-      })
-      setRooms(response.data.rooms)
-      setError('')
-    } catch (err) {
-      console.error('Error al cargar habitaciones:', err)
-      setError('Error al cargar habitaciones')
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const getStatusColor = (status: string) => {
-    const colors: { [key: string]: string } = {
-      Disponible: '#28a745',
-      Ocupada: '#dc3545',
-      Mantenimiento: '#ffc107',
-      Limpieza: '#17a2b8',
+    const colors: Record<string, string> = {
+      Disponible: '#16A34A',
+      Ocupada: '#DC2626',
+      Mantenimiento: '#D97706',
+      Limpieza: '#D97706',
     }
-    return colors[status] || '#6c757d'
-  }
-
-  const getTypeEmoji = (type: string) => {
-    const emojis: { [key: string]: string } = {
-      Individual: '🛏️',
-      Doble: '🛏️🛏️',
-      Triple: '🛏️🛏️🛏️',
-      Suite: '👑',
-    }
-    return emojis[type] || '🏨'
+    return colors[status] || '#64748B'
   }
 
   if (loading) {
@@ -65,9 +55,9 @@ export default function AvailableRooms() {
   return (
     <div style={styles.container}>
       <div style={styles.header}>
-        <h2 style={styles.title}>🏨 Habitaciones</h2>
+        <h2 style={styles.title}>Habitaciones</h2>
         <div style={styles.filters}>
-          {['Disponible', 'Ocupada', 'Limpieza', 'Mantenimiento'].map((status) => (
+          {['Disponible', 'Ocupada', 'Mantenimiento'].map((status) => (
             <button
               key={status}
               onClick={() => setFilter(status)}
@@ -85,28 +75,21 @@ export default function AvailableRooms() {
       {error && <div style={styles.error}>{error}</div>}
 
       {rooms.length === 0 ? (
-        <div style={styles.empty}>No hay habitaciones en este estado</div>
+        <div style={styles.empty}>No hay habitaciones en este estado.</div>
       ) : (
         <div style={styles.grid}>
           {rooms.map((room) => (
             <div key={room.id} style={styles.roomCard}>
-              <div
-                style={{
-                  ...styles.roomStatus,
-                  backgroundColor: getStatusColor(room.status),
-                }}
-              >
-                {room.status}
-              </div>
+              <div style={{ ...styles.roomStatus, backgroundColor: getStatusColor(room.status) }}>{room.status}</div>
               <div style={styles.roomContent}>
                 <div style={styles.roomHeader}>
                   <h3 style={styles.roomNumber}>Hab. {room.roomNumber}</h3>
-                  <span style={styles.typeEmoji}>{getTypeEmoji(room.type)}</span>
+                  <span style={styles.typeEmoji}>{room.type === 'Suite' ? '??' : '???'}</span>
                 </div>
                 <p style={styles.roomType}>{room.type}</p>
                 <div style={styles.roomInfo}>
-                  <span>👥 {room.capacity} personas</span>
-                  <span>💰 ${parseFloat(room.pricePerNight.toString()).toFixed(2)}/noche</span>
+                  <span>Capacidad: {room.capacity || 1}</span>
+                  <span>Precio: ${Number(room.pricePerNight).toFixed(2)} / noche</span>
                 </div>
               </div>
             </div>
@@ -117,201 +100,106 @@ export default function AvailableRooms() {
   )
 }
 
-const styles = {
+const styles: Record<string, CSSProperties> = {
   container: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: '16px',
-    padding: '2rem',
-    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)',
-    border: '1px solid rgba(255, 255, 255, 0.5)',
-    backdropFilter: 'blur(10px)',
-    marginBottom: '2rem',
-  } as React.CSSProperties,
+    backgroundColor: '#FFFFFF',
+    borderRadius: '12px',
+    padding: '1.5rem',
+    border: '1px solid #E2E8F0',
+  },
   header: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: '1.5rem',
-    flexWrap: 'wrap' as const,
-    gap: '1rem',
-  } as React.CSSProperties,
+    marginBottom: '1rem',
+    gap: '0.75rem',
+    flexWrap: 'wrap',
+  },
   title: {
     margin: 0,
-    fontSize: '1.3rem',
-    fontWeight: 700,
-    color: '#1a1a1a',
-  } as React.CSSProperties,
+    fontSize: '1.1rem',
+    color: '#0F172A',
+  },
   filters: {
     display: 'flex',
     gap: '0.5rem',
-    flexWrap: 'wrap' as const,
-  } as React.CSSProperties,
+    flexWrap: 'wrap',
+  },
   filterBtn: {
-    padding: '0.6rem 1.2rem',
-    border: '2px solid #e5e7eb',
-    borderRadius: '20px',
-    backgroundColor: 'white',
+    border: '1px solid #E2E8F0',
+    borderRadius: '999px',
+    backgroundColor: '#FFFFFF',
+    padding: '0.35rem 0.85rem',
+    fontSize: '0.8rem',
     cursor: 'pointer',
-    fontSize: '0.9rem',
-    fontWeight: 500,
-    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-    color: '#666',
-  } as React.CSSProperties,
+    color: '#334155',
+  },
   filterBtnActive: {
-    backgroundColor: '#3b82f6',
-    color: 'white',
-    borderColor: '#3b82f6',
-    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
-  } as React.CSSProperties,
-  error: {
-    backgroundColor: 'rgba(248, 215, 218, 0.9)',
-    color: '#721c24',
-    padding: '1rem 1.5rem',
-    borderRadius: '12px',
-    marginBottom: '1.5rem',
-    border: '1px solid #f5c6cb',
-    fontSize: '0.95rem',
-  } as React.CSSProperties,
-  empty: {
-    textAlign: 'center' as const,
-    padding: '2rem',
-    color: '#999',
-    fontSize: '1rem',
-  } as React.CSSProperties,
+    backgroundColor: '#1D4ED8',
+    borderColor: '#1D4ED8',
+    color: '#FFFFFF',
+  },
   grid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-    gap: '1.5rem',
-  } as React.CSSProperties,
+    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+    gap: '0.75rem',
+  },
   roomCard: {
-    backgroundColor: '#f9fafb',
-    borderRadius: '12px',
-    padding: '1.5rem',
-    border: '1px solid #e5e7eb',
-    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-    position: 'relative' as const,
+    border: '1px solid #E2E8F0',
+    borderRadius: '10px',
     overflow: 'hidden',
-    cursor: 'pointer',
-  } as React.CSSProperties,
+  },
   roomStatus: {
-    display: 'inline-block',
-    padding: '0.4rem 0.8rem',
-    borderRadius: '8px',
+    color: '#FFFFFF',
     fontSize: '0.75rem',
     fontWeight: 700,
-    color: 'white',
-    marginBottom: '1rem',
-    textTransform: 'uppercase' as const,
-    letterSpacing: '0.5px',
-  } as React.CSSProperties,
-  roomContent: {
-    padding: 0,
-  } as React.CSSProperties,
-  roomHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '0.5rem',
-  } as React.CSSProperties,
-  roomNumber: {
-    margin: 0,
-    fontSize: '1.3rem',
-    fontWeight: 700,
-    color: '#1a1a1a',
-  } as React.CSSProperties,
-  typeEmoji: {
-    fontSize: '1.5rem',
-  } as React.CSSProperties,
-  roomType: {
-    margin: '0.25rem 0 0.75rem 0',
-    fontSize: '0.9rem',
-    color: '#666',
-    fontWeight: 500,
-  } as React.CSSProperties,
-  roomInfo: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '0.5rem',
-    fontSize: '0.9rem',
-    color: '#555',
-  } as React.CSSProperties,
-  loading: {
-    textAlign: 'center' as const,
-    padding: '2rem',
-    color: '#666',
-    fontSize: '0.95rem',
-  } as React.CSSProperties,
-} as const
-    backgroundColor: '#132a3a',
-    color: 'white',
-    borderColor: '#132a3a',
-  },
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-    gap: '1.5rem',
-  },
-  roomCard: {
-    position: 'relative' as const,
-    backgroundColor: '#f8f9fa',
-    borderRadius: '8px',
-    overflow: 'hidden',
-    border: '1px solid #eee',
-    transition: 'transform 0.3s, box-shadow 0.3s',
-  },
-  roomStatus: {
-    padding: '0.5rem 1rem',
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: '0.85rem',
-    textAlign: 'center' as const,
+    textAlign: 'center',
+    padding: '0.4rem 0.7rem',
   },
   roomContent: {
-    padding: '1.2rem',
+    padding: '0.8rem',
   },
   roomHeader: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: '0.5rem',
   },
   roomNumber: {
     margin: 0,
-    fontSize: '1.3rem',
-    fontWeight: 'bold',
-    color: '#132a3a',
+    fontSize: '1rem',
+    color: '#0F172A',
   },
   typeEmoji: {
-    fontSize: '1.5rem',
+    fontSize: '1.1rem',
   },
   roomType: {
-    margin: '0.25rem 0',
-    color: '#666',
-    fontSize: '0.95rem',
+    margin: '0.3rem 0',
+    color: '#64748B',
+    fontSize: '0.85rem',
   },
   roomInfo: {
     display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '0.25rem',
-    marginTop: '0.75rem',
-    fontSize: '0.85rem',
-    color: '#555',
+    flexDirection: 'column',
+    fontSize: '0.8rem',
+    color: '#475569',
+    gap: '0.2rem',
   },
   error: {
-    backgroundColor: '#f8d7da',
-    color: '#721c24',
-    padding: '1rem',
+    marginBottom: '0.8rem',
+    padding: '0.7rem',
+    border: '1px solid #FECACA',
+    backgroundColor: '#FEF2F2',
+    color: '#B91C1C',
     borderRadius: '8px',
-    marginBottom: '1rem',
   },
   empty: {
-    textAlign: 'center' as const,
-    padding: '2rem',
-    color: '#999',
+    textAlign: 'center',
+    color: '#64748B',
+    padding: '1rem 0',
   },
   loading: {
-    textAlign: 'center' as const,
-    padding: '2rem',
-    color: '#666',
+    textAlign: 'center',
+    color: '#64748B',
+    padding: '1rem 0',
   },
-} as const
+}

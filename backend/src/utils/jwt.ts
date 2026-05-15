@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken'
+import { SignOptions } from 'jsonwebtoken'
 
 export interface JwtPayload {
   id: number
@@ -11,8 +12,9 @@ export interface JwtPayload {
 
 export const generateToken = (payload: Omit<JwtPayload, 'iat' | 'exp'>): string => {
   const secret = process.env.JWT_SECRET || 'tu-secret-muy-seguro-cambiar-en-produccion'
-  const expiresIn = process.env.JWT_EXPIRES_IN || '7d'
-  return jwt.sign(payload, secret, { expiresIn })
+  const expiresInEnv = process.env.JWT_EXPIRES_IN || '7d'
+  // Cast to avoid strict type checking
+  return jwt.sign(payload, secret, { expiresIn: expiresInEnv as any })
 }
 
 export const verifyToken = (token: string): JwtPayload | null => {

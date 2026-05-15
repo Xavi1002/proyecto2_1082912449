@@ -145,7 +145,7 @@ export default function RoomList({
         </div>
       ) : rooms.length === 0 ? (
         <div className="border border-dashed border-white/20 rounded-lg p-12 text-center">
-          <p className="text-slate-400">No hay habitaciones registradas con esos filtros.</p>
+          <p className="text-slate-400">No hay habitaciones registradas.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
