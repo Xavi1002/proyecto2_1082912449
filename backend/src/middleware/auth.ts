@@ -53,9 +53,32 @@ export const authorizeRole = (...allowedRoles: string[]) => {
 }
 
 /**
- * Middleware para verificar si el usuario puede gestionar habitaciones
+ * Middleware para crear/editar/eliminar habitaciones - Solo SuperAdmin (RN-03)
  */
-export const requireRoomManagement = (
+export const requireSuperAdminRoomManagement = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  if (!req.user) {
+    res.status(401).json({ error: 'No autenticado' })
+    return
+  }
+
+  if (req.user.role !== RoleType.SUPERADMIN) {
+    res.status(403).json({
+      error: 'No tiene permiso. Solo SuperAdmin puede crear, editar o eliminar habitaciones',
+    })
+    return
+  }
+
+  next()
+}
+
+/**
+ * Middleware para cambiar estado de habitaciones - SuperAdmin o Recepcionista (RN-06)
+ */
+export const requireChangeRoomStatus = (
   req: Request,
   res: Response,
   next: NextFunction
@@ -66,9 +89,9 @@ export const requireRoomManagement = (
   }
 
   const permissions = getPermissions(req.user.role as RoleType)
-  if (!permissions.canManageRooms) {
+  if (!permissions.canChangeRoomStatus) {
     res.status(403).json({
-      error: 'No tiene permiso para gestionar habitaciones',
+      error: 'No tiene permiso para cambiar estado de habitaciones',
     })
     return
   }

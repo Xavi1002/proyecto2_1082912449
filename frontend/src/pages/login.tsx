@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
-import Link from 'next/link'
 import { useAuth } from '../lib/useAuth'
 import NavBar from '../components/NavBar'
 
@@ -9,14 +8,20 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const { login, isAuthenticated, isLoading } = useAuth()
+  const { login, isAuthenticated, isLoading, user } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      router.replace('/')
+      if (user?.mustChangePassword) {
+        router.replace('/profile')
+      } else if (user?.role === 'Cliente') {
+        router.replace('/my-reservations')
+      } else {
+        router.replace('/dashboard')
+      }
     }
-  }, [isAuthenticated, isLoading, router])
+  }, [isAuthenticated, isLoading, router, user])
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -25,7 +30,6 @@ export default function Login() {
 
     try {
       await login(email, password)
-      router.replace('/')
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || 'Error al iniciar sesión')
     } finally {
@@ -132,12 +136,7 @@ export default function Login() {
 
             {/* Footer */}
             <div className="text-center">
-              <p className="text-slate-300 text-sm">
-                ¿No tienes cuenta?{' '}
-                <Link href="/register" className="text-primary-400 hover:text-primary-300 font-semibold transition-colors duration-200">
-                  Registrate aquí
-                </Link>
-              </p>
+              <p className="text-slate-300 text-sm">El acceso público está deshabilitado. El alta de usuarios la realiza administración.</p>
             </div>
           </div>
 

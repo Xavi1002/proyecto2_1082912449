@@ -2,6 +2,7 @@ import { Request, Response } from 'express'
 import { Op } from 'sequelize'
 import sequelize from '../config/database'
 import Room, { RoomStatus, RoomType } from '../models/Room'
+import Reservation, { ReservationStatus } from '../models/Reservation'
 
 const isValidRoomType = (value: string): value is RoomType =>
   Object.values(RoomType).includes(value as RoomType)
@@ -94,7 +95,7 @@ export const createRoom = async (req: Request, res: Response) => {
     const existingRoom = await Room.findOne({ where: { roomNumber } })
     if (existingRoom) {
       return res.status(409).json({
-        error: 'Ya existe una habitacion con ese numero',
+        error: `Ya existe una habitacion con el numero ${roomNumber}.`,
       })
     }
 
@@ -109,8 +110,16 @@ export const createRoom = async (req: Request, res: Response) => {
       message: 'Habitacion creada exitosamente',
       room,
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error al crear habitacion:', error)
+    
+    // Capturar error UNIQUE constraint de Sequelize
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(409).json({
+        error: `Ya existe una habitacion con el numero ${req.body.roomNumber}.`,
+      })
+    }
+    
     res.status(500).json({ error: 'Error al crear habitacion' })
   }
 }
@@ -194,6 +203,22 @@ export const deleteRoom = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Habitacion no encontrada' })
     }
 
+    // RN-08: Verificar que no tenga reservas activas (PENDING o CONFIRMED)
+    const activeReservationCount = await Reservation.count({
+      where: {
+        roomId: room.id,
+        status: {
+          [Op.in]: [ReservationStatus.PENDING, ReservationStatus.CONFIRMED],
+        },
+      },
+    })
+
+    if (activeReservationCount > 0) {
+      return res.status(409).json({
+        error: `La habitación tiene ${activeReservationCount} reserva(s) activa(s) y no puede eliminarse.`,
+      })
+    }
+
     await room.destroy()
 
     res.json({
@@ -246,6 +271,83 @@ export const getRoomAvailability = async (_req: Request, res: Response) => {
   } catch (error) {
     console.error('Error al obtener disponibilidad:', error)
     res.status(500).json({ error: 'Error al obtener disponibilidad' })
+  }
+}
+
+/**
+ * GET /api/rooms/available?checkIn=YYYY-MM-DD&checkOut=YYYY-MM-DD
+ * Retorna habitaciones disponibles sin reservas solapadas (RN-02)
+ */
+export const getAvailableRoomsForDates = async (req: Request, res: Response) => {
+  try {
+    const { checkIn, checkOut } = req.query
+
+    // Validar parámetros
+    if (!checkIn || !checkOut) {
+      return res.status(400).json({
+        error: 'checkIn y checkOut son requeridos. Formato: YYYY-MM-DD',
+      })
+    }
+
+    const checkInDate = new Date(String(checkIn))
+    const checkOutDate = new Date(String(checkOut))
+
+    if (isNaN(checkInDate.getTime()) || isNaN(checkOutDate.getTime())) {
+      return res.status(400).json({
+        error: 'Fechas inválidas. Formato esperado: YYYY-MM-DD',
+      })
+    }
+
+    if (checkOutDate <= checkInDate) {
+      return res.status(400).json({
+        error: 'La fecha de salida debe ser posterior a la de entrada',
+      })
+    }
+
+    // Obtener habitaciones disponibles que NO tengan reservas activas solapadas
+    // SELECT * FROM rooms r WHERE r.status = 'Disponible'
+    // AND r.id NOT IN (
+    //   SELECT res.roomId FROM reservations res
+    //   WHERE res.status IN ('Pendiente', 'Confirmada')
+    //   AND res.checkInDate < $checkOut AND res.checkOutDate > $checkIn
+    // )
+    const reservedRoomIds = await Reservation.findAll({
+      attributes: ['roomId'],
+      where: {
+        status: {
+          [Op.in]: [ReservationStatus.PENDING, ReservationStatus.CONFIRMED],
+        },
+        checkInDate: {
+          [Op.lt]: checkOutDate, // check_in < checkOut
+        },
+        checkOutDate: {
+          [Op.gt]: checkInDate, // check_out > checkIn
+        },
+      },
+      raw: true,
+    })
+
+    const reservedIds = reservedRoomIds.map((r: any) => r.roomId)
+
+    const availableRooms = await Room.findAll({
+      where: {
+        status: RoomStatus.DISPONIBLE,
+        id: {
+          [Op.notIn]: reservedIds.length > 0 ? reservedIds : [0], // Evitar query vacía
+        },
+      },
+      order: [['roomNumber', 'ASC']],
+    })
+
+    res.json({
+      checkIn: String(checkIn),
+      checkOut: String(checkOut),
+      count: availableRooms.length,
+      availableRooms,
+    })
+  } catch (error) {
+    console.error('Error al obtener habitaciones disponibles:', error)
+    res.status(500).json({ error: 'Error al obtener habitaciones disponibles' })
   }
 }
 

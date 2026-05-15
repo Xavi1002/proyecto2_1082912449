@@ -11,7 +11,7 @@
 | **Curso** | Lógica y Programación — SIST0200 |
 | **Fecha de Inicio** | Mayo 2026 |
 | **Archivos de Referencia** | `PLAN_HOTELMANAGER (1).md` |
-| **Estado General** | ✅ Fase 1 Completada — Listo para Fase 2 |
+| **Estado General** | Proyecto Concluido |
 
 ---
 
@@ -19,12 +19,12 @@
 
 | # | Fase | Rol Asignado | Estado | Inicio | Cierre | Resumen |
 |---|------|--------------|--------|--------|--------|---------|
-| 1 | Bootstrap, Login y `dataService` base | Ingeniero Fullstack Senior | ✅ Completada | 11 May 2026 | 14 May 2026 | Sistemas de auth con JWT, dataService centralizado, APIs base, login con diseño visual |
-| 2 | Dashboard, Layout y bootstrap | Diseñador Frontend + Ingeniero de Sistemas | Pendiente | — | — | — |
-| 3 | Gestión de Habitaciones | Ingeniero Fullstack | Pendiente | — | — | — |
-| 4 | Gestión de Clientes | Ingeniero Fullstack | Pendiente | — | — | — |
-| 5 | Sistema de Reservas | Ingeniero Fullstack Senior | Pendiente | — | — | — |
-| 6 | Administración y Pulido Final | Diseñador Frontend + Ingeniero Fullstack | Pendiente | — | — | — |
+| 1 | Bootstrap, Login y `dataService` base | Ingeniero Fullstack Senior | ✅ Completada | 2026-05-08 | — | Estructura base lista |
+| 2 | Dashboard, Layout y bootstrap | Diseñador Frontend + Ingeniero de Sistemas | ✅ Completada | 2026-05-15 | 2026-05-15 | Sidebar por rol + middleware + KPIs |
+| 3 | Gestión de Habitaciones | Ingeniero Fullstack | ✅ Completada | 2026-05-15 | 2026-05-15 | CRUD con RN-03, RN-06, RN-08 |
+| 4 | Gestión de Clientes | Ingeniero Fullstack | ✅ Completada | 2026-05-15 | 2026-05-15 | Clientes + búsqueda + portal vinculado |
+| 5 | Sistema de Reservas | Ingeniero Fullstack Senior | ✅ Completada | 2026-05-15 | 2026-05-15 | Reservas + snapshot + cancelación |
+| 6 | Administración y Pulido Final | Diseñador Frontend + Ingeniero Fullstack | ✅ Completada | 2026-05-15 | 2026-05-15 | Usuarios temporales + auditoría + errores globales + cierre visual |
 
 ---
 
@@ -152,8 +152,98 @@
 - **Responsable:** Ingeniero de Proyectos
 - **Notas:** —
 
+### Entrada 2
+- **Fecha:** 2026-05-15
+- **Hora:** 11:55
+- **Fase:** 3 — Gestión de Habitaciones
+- **Evento:** Cierre de Fase 3 ✅
+- **Detalle:** Implementación completa del CRUD de habitaciones con control de acceso diferenciado por rol. Se implementaron todas las reglas de negocio críticas:
+  - **RN-03:** Solo SuperAdmin puede crear, editar y eliminar habitaciones
+  - **RN-06:** Recepcionista puede cambiar estado (mantenimiento/disponible) pero no CRUD
+  - **RN-08:** Validación: no se puede eliminar habitación si tiene reservas activas
+  - Endpoint **GET /api/rooms/available?checkIn=&checkOut=** con lógica de disponibilidad sin solapamientos
+  - Manejo correcto de errores 409 para UNIQUE constraints y conflictos
+  - TypeScript compilable sin errores
+- **Responsable:** Ingeniero Fullstack
+- **Archivos Modificados:** 8 archivos principales
+- **Documentación:** `doc/RESUMEN_FASE_3_HABITACIONES.md`
+- **Status Compilación:** ✅ `npm run build` sin errores
+- **Notas:** Arquitectura actual es Express + Sequelize. Proyecto cumple todas las reglas de negocio especificadas en el plan maestro.
+
+### Entrada 3
+- **Fecha:** 2026-05-15
+- **Hora:** 12:20
+- **Fase:** 2 — Dashboard, Layout y bootstrap
+- **Evento:** Inicio de Fase 2 🟦
+- **Detalle:** Se inicia implementación de layout dinámico por rol, middleware de aislamiento para cliente, dashboard con 4 KPIs operativas y ajustes visuales según paleta oficial.
+- **Responsable:** Diseñador Frontend Obsesivo + Ingeniero de Sistemas
+
+### Entrada 4
+- **Fecha:** 2026-05-15
+- **Hora:** 12:55
+- **Fase:** 2 — Dashboard, Layout y bootstrap
+- **Evento:** Cierre de Fase 2 ✅
+- **Detalle:** Fase completada con sidebar dinámico por rol (SuperAdmin/Recepcionista/Cliente), middleware con redirect silencioso para cliente, dashboard con 4 KpiCard e iconografía, ruta `/admin/db-setup` con texto operativo y creación de `/my-reservations`.
+- **Responsable:** Diseñador Frontend Obsesivo + Ingeniero de Sistemas
+- **Status Compilación:** ✅ `npm run typecheck` sin errores
+- **Documentación:** `doc/RESUMEN_FASE_2_LAYOUT.md`
+
+### Entrada 5
+- **Fecha:** 2026-05-15
+- **Hora:** 13:20
+- **Fase:** 4 — Gestión de Clientes
+- **Evento:** Inicio de Fase 4 🟦
+- **Detalle:** Se inicia implementación de módulo de clientes con RN-05 (unicidad diferenciada), RN-07 (aislamiento por user_id) y flujo de incorporación con contraseña temporal.
+- **Responsable:** Ingeniero Fullstack
+
+### Entrada 6
+- **Fecha:** 2026-05-15
+- **Hora:** 13:45
+- **Fase:** 4 — Gestión de Clientes
+- **Evento:** Cierre de Fase 4 ✅
+- **Detalle:** Se completó módulo de clientes con rutas `/api/clients`, búsqueda `/api/clients/search?q=`, vínculo opcional a cuenta portal (`mustChangePassword=true`) y cambio de contraseña inicial desde perfil. Se validó compilación backend/frontend.
+- **Responsable:** Ingeniero Fullstack
+- **Status Compilación:** ✅ `backend npm run build` y `frontend npm run typecheck`
+- **Documentación:** `doc/RESUMEN_FASE_4_CLIENTES.md`
+
+### Entrada 7
+- **Fecha:** 2026-05-15
+- **Hora:** 15:10
+- **Fase:** 5 — Sistema de Reservas
+- **Evento:** Inicio de Fase 5 🟦
+- **Detalle:** Se inició la implementación del flujo crítico de reservas con selección de cliente, verificación dinámica de habitaciones disponibles por fechas, snapshot de precio y cancelación con liberación de habitación.
+- **Responsable:** Ingeniero Fullstack Senior
+
+### Entrada 8
+- **Fecha:** 2026-05-15
+- **Hora:** 15:40
+- **Fase:** 5 — Sistema de Reservas
+- **Evento:** Cierre de Fase 5 ✅
+- **Detalle:** Se completó la secuencia crítica de reservas: validación de habitación disponible, control de solapamiento, snapshot de `price_per_night`, inserción de reserva, cambio de habitación a ocupada y auditoría. La cancelación valida estado activo y libera la habitación. Se documenta que, en esta arquitectura, el paso de inserción y el cambio de estado de la habitación siguen siendo secuenciales y pueden dejar inconsistencia si el segundo falla después del primero.
+- **Responsable:** Ingeniero Fullstack Senior
+- **Status Compilación:** ✅ `backend npm run build` y `frontend npm run typecheck`
+- **Documentación:** `doc/RESUMEN_FASE_5_RESERVAS.md`
+
+### Entrada 9
+- **Fecha:** 2026-05-15
+- **Hora:** 16:10
+- **Fase:** 6 — Administración y Pulido Final
+- **Evento:** Inicio de Fase 6 🟦
+- **Detalle:** Se inició el cierre técnico con administración de usuarios con contraseña temporal, auditoría consultable, empty states consistentes y manejo global de errores para sesión expirada y fallos internos.
+- **Responsable:** Diseñador Frontend Obsesivo + Ingeniero Fullstack
+
+### Entrada 10
+- **Fecha:** 2026-05-15
+- **Hora:** 16:55
+- **Fase:** 6 — Administración y Pulido Final
+- **Evento:** Cierre de Fase 6 ✅
+- **Detalle:** Se completó el pulido final: gestión de usuarios con contraseña temporal y modal de copia, auditoría consultable, empty states hoteleros, error handling global, restricción del portal de cliente y deshabilitación del registro público. Se validó el frontend con `npm run lint` y `npm run build`; el backend compila con `npm run build`. La URL de producción no fue publicada desde esta sesión.
+- **Responsable:** Diseñador Frontend Obsesivo + Ingeniero Fullstack
+- **Status Compilación:** ✅ `npm run lint`, `npm run build` y `backend npm run build`
+- **Documentación:** `doc/RESUMEN_FASE_6_PULIDO_FINAL.md`
+
 ---
 
-**Documento creado:** 2026-05-08  
-**Estado inicial:** Listo para Fase 1  
-**Próxima revisión:** Después de completar Fase 1  
+**Estado actual:** Fase 6 ✅ Completada  
+**Próxima fase:** Proyecto concluido  
+**Próxima revisión:** No aplica

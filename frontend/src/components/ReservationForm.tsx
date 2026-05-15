@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import ClientSearchInput, { ClientOption } from './ClientSearchInput'
 import { api } from '../lib/api'
 
 interface Room {
@@ -13,14 +14,23 @@ interface Room {
 interface ReservationFormProps {
   onSuccess?: () => void
   onCancel?: () => void
+  allowClientSelection?: boolean
 }
 
-export default function ReservationForm({ onSuccess, onCancel }: ReservationFormProps) {
+const formatCop = (value: number) =>
+  new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    maximumFractionDigits: 0,
+  }).format(value)
+
+export default function ReservationForm({ onSuccess, onCancel, allowClientSelection = false }: ReservationFormProps) {
   const [checkInDate, setCheckInDate] = useState('')
   const [checkOutDate, setCheckOutDate] = useState('')
   const [numberOfGuests, setNumberOfGuests] = useState(1)
   const [specialRequests, setSpecialRequests] = useState('')
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null)
+  const [selectedClient, setSelectedClient] = useState<ClientOption | null>(null)
   const [availableRooms, setAvailableRooms] = useState<Room[]>([])
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -29,9 +39,27 @@ export default function ReservationForm({ onSuccess, onCancel }: ReservationForm
   // Obtener fecha mínima (hoy)
   const today = new Date().toISOString().split('T')[0]
 
-  const handleSearchRooms = async () => {
+  const nights = useMemo(() => {
     if (!checkInDate || !checkOutDate) {
-      setError('Por favor ingresa fechas de entrada y salida')
+      return 0
+    }
+
+    const checkIn = new Date(`${checkInDate}T00:00:00`)
+    const checkOut = new Date(`${checkOutDate}T00:00:00`)
+    return Math.max(0, Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)))
+  }, [checkInDate, checkOutDate])
+
+  const selectedRoom = useMemo(
+    () => availableRooms.find((room) => room.id === selectedRoomId) || null,
+    [availableRooms, selectedRoomId]
+  )
+
+  const previewTotal = selectedRoom && nights > 0 ? Number(selectedRoom.pricePerNight) * nights : 0
+
+  const loadAvailableRooms = useCallback(async () => {
+    if (!checkInDate || !checkOutDate) {
+      setAvailableRooms([])
+      setSelectedRoomId(null)
       return
     }
 
@@ -39,31 +67,43 @@ export default function ReservationForm({ onSuccess, onCancel }: ReservationForm
     setSearchLoading(true)
 
     try {
-      const response = await api.get('/reservations/availability', {
+      const response = await api.get('/rooms/available', {
         params: {
-          checkInDate,
-          checkOutDate,
+          checkIn: checkInDate,
+          checkOut: checkOutDate,
         },
       })
-      setAvailableRooms(
-        response.data.availableRooms.map((room: any) => ({
-          ...room,
-          totalPrice: room.totalPrice,
-        }))
-      )
-      if (response.data.availableRooms.length === 0) {
+
+      const rooms = response.data.availableRooms || []
+      setAvailableRooms(rooms)
+
+      if (rooms.length === 0) {
+        setSelectedRoomId(null)
         setError('No hay habitaciones disponibles en esas fechas')
+      } else if (selectedRoomId && !rooms.some((room: Room) => room.id === selectedRoomId)) {
+        setSelectedRoomId(null)
       }
     } catch (err: any) {
+      setAvailableRooms([])
+      setSelectedRoomId(null)
       setError(err.response?.data?.error || 'Error al buscar disponibilidad')
     } finally {
       setSearchLoading(false)
     }
-  }
+  }, [checkInDate, checkOutDate, selectedRoomId])
+
+  useEffect(() => {
+    void loadAvailableRooms()
+  }, [loadAvailableRooms])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+
+    if (allowClientSelection && !selectedClient) {
+      setError('Por favor selecciona un cliente')
+      return
+    }
 
     if (!selectedRoomId) {
       setError('Por favor selecciona una habitación')
@@ -75,6 +115,7 @@ export default function ReservationForm({ onSuccess, onCancel }: ReservationForm
     try {
       await api.post('/reservations', {
         roomId: selectedRoomId,
+        clientId: selectedClient?.id,
         checkInDate,
         checkOutDate,
         numberOfGuests,
@@ -96,6 +137,23 @@ export default function ReservationForm({ onSuccess, onCancel }: ReservationForm
         <h2 className="text-3xl font-bold text-white">Nueva Reserva</h2>
         <p className="text-slate-400 mt-2">Completa los detalles para crear una nueva reserva</p>
       </div>
+
+      {allowClientSelection && (
+        <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-lg p-6">
+          <h3 className="text-lg font-bold text-white mb-4">👤 Cliente</h3>
+          <ClientSearchInput
+            onSelect={(client) => {
+              setSelectedClient(client)
+              setError('')
+            }}
+          />
+          {selectedClient && (
+            <p className="mt-3 text-sm text-primary-200">
+              Seleccionado: {selectedClient.name} - {selectedClient.identificationNumber}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Error Alert */}
       {error && (
@@ -143,29 +201,9 @@ export default function ReservationForm({ onSuccess, onCancel }: ReservationForm
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={handleSearchRooms}
-          disabled={searchLoading}
-          className="w-full py-3 px-4 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 disabled:from-slate-600 disabled:to-slate-700 text-white font-bold rounded-lg transition-all duration-200 flex items-center justify-center space-x-2"
-        >
-          {searchLoading ? (
-            <>
-              <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              <span>Buscando disponibilidad...</span>
-            </>
-          ) : (
-            <>
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" />
-              </svg>
-              <span>Buscar Disponibilidad</span>
-            </>
-          )}
-        </button>
+        <div className="rounded-lg border border-white/15 bg-white/5 p-4 text-sm text-slate-200">
+          {searchLoading ? 'Actualizando habitaciones disponibles...' : 'Las habitaciones se actualizan automáticamente al cambiar las fechas.'}
+        </div>
       </div>
 
       {/* Rooms Selection */}
@@ -194,11 +232,11 @@ export default function ReservationForm({ onSuccess, onCancel }: ReservationForm
                     <span className="text-slate-400">Capacidad:</span> {room.capacity} personas
                   </p>
                   <p>
-                    <span className="text-slate-400">Precio/noche:</span> ${Number(room.pricePerNight).toFixed(2)}
+                    <span className="text-slate-400">Precio/noche:</span> {formatCop(Number(room.pricePerNight))}
                   </p>
                 </div>
                 <p className="text-xl font-bold text-primary-400 mt-3">
-                  Total: ${room.totalPrice}
+                  Total: {formatCop(Number(room.totalPrice))}
                 </p>
               </div>
             ))}
@@ -240,6 +278,12 @@ export default function ReservationForm({ onSuccess, onCancel }: ReservationForm
                 className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all resize-none"
               />
             </div>
+
+            {selectedRoom && nights > 0 && (
+              <div className="rounded-lg border border-primary-500/30 bg-primary-500/10 px-4 py-3 text-sm text-primary-100">
+                {nights} noches × {formatCop(Number(selectedRoom.pricePerNight))} = {formatCop(previewTotal)}
+              </div>
+            )}
           </div>
         </div>
       )}

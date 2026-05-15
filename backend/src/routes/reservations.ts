@@ -25,6 +25,7 @@ router.post('/reservations', authenticateToken, createReservation)
 
 // Obtener mis reservas - Todos los usuarios autenticados
 router.get('/reservations/my-reservations', authenticateToken, getMyReservations)
+router.get('/reservations/my', authenticateToken, getMyReservations)
 
 // Obtener todas las reservas - Solo Recepción y SuperAdmin
 router.get('/reservations', authenticateToken, authorizeRole(RoleType.SUPERADMIN, RoleType.RECEPCION), getReservations)

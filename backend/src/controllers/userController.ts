@@ -1,7 +1,9 @@
 import { Request, Response } from 'express'
 import { Op } from 'sequelize'
+import crypto from 'crypto'
 import Role, { RoleType } from '../models/Role'
 import User from '../models/User'
+import { hashPassword } from '../utils/password'
 
 export const getUsers = async (req: Request, res: Response) => {
   try {
@@ -72,11 +74,15 @@ export const createUser = async (req: Request, res: Response) => {
       return res.status(409).json({ error: 'El email ya está registrado' })
     }
 
+    const temporaryPassword = crypto.randomBytes(5).toString('hex')
+    const hashedPassword = await hashPassword(temporaryPassword)
+
     const user = await User.create({
       name,
       email,
       roleId,
-      password: 'temporal', // Se debe cambiar en primer login
+      password: hashedPassword,
+      mustChangePassword: true,
     })
 
     const userWithRole = await User.findByPk(user.id, {
@@ -92,6 +98,7 @@ export const createUser = async (req: Request, res: Response) => {
 
     res.status(201).json({
       message: 'Usuario creado exitosamente',
+      temporaryPassword,
       user: userWithRole,
     })
   } catch (error) {

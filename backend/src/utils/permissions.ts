@@ -2,44 +2,98 @@ import { RoleType } from '../models/Role'
 
 /**
  * Utilidades para control de acceso y permisos
+ * 
+ * RN-03: Solo SuperAdmin puede crear, editar o eliminar habitaciones
+ * RN-06: Recepcionista puede cambiar estado de habitaciones, pero no CRUD
  */
 
-export const PERMISSIONS = {
+export interface PermissionSet {
+  canCreateRooms: boolean
+  canEditRooms: boolean
+  canDeleteRooms: boolean
+  canChangeRoomStatus: boolean
+  canViewRooms: boolean
+  canManageReservations: boolean
+  canViewAllReservations: boolean
+  canEditAllReservations: boolean
+  canDeleteAllReservations: boolean
+  canManageUsers: boolean
+  canAccessAdminPanel: boolean
+  canManageRooms: boolean
+}
+
+export const PERMISSIONS: Record<RoleType, PermissionSet> = {
   // SuperAdmin - Acceso total
-  SUPERADMIN: {
-    canManageRooms: true,
+  [RoleType.SUPERADMIN]: {
+    // Habitaciones (RN-03)
+    canCreateRooms: true,
+    canEditRooms: true,
+    canDeleteRooms: true,
+    canChangeRoomStatus: true,
+    canViewRooms: true,
+    
+    // Reservas
     canManageReservations: true,
-    canManageUsers: true,
     canViewAllReservations: true,
     canEditAllReservations: true,
     canDeleteAllReservations: true,
+    
+    // Usuarios
+    canManageUsers: true,
     canAccessAdminPanel: true,
+    
+    // Legacy compat
+    canManageRooms: true,
   },
 
-  // Recepción - Gestiona reservas y habitaciones
-  RECEPCION: {
-    canManageRooms: true,
+  // Recepción - Gestiona reservas, puede cambiar estado de habitaciones (RN-06)
+  [RoleType.RECEPCION]: {
+    // Habitaciones (RN-06) - Solo estado, NO CRUD
+    canCreateRooms: false,
+    canEditRooms: false,
+    canDeleteRooms: false,
+    canChangeRoomStatus: true,  // Puede cambiar a mantenimiento o disponible
+    canViewRooms: true,
+    
+    // Reservas
     canManageReservations: true,
-    canManageUsers: false,
     canViewAllReservations: true,
     canEditAllReservations: true,
     canDeleteAllReservations: true,
+    
+    // Usuarios
+    canManageUsers: false,
     canAccessAdminPanel: false,
+    
+    // Legacy compat
+    canManageRooms: false,
   },
 
   // Cliente - Solo ve sus propias reservas
-  CLIENTE: {
-    canManageRooms: false,
+  [RoleType.CLIENTE]: {
+    // Habitaciones
+    canCreateRooms: false,
+    canEditRooms: false,
+    canDeleteRooms: false,
+    canChangeRoomStatus: false,
+    canViewRooms: false,
+    
+    // Reservas
     canManageReservations: false,
-    canManageUsers: false,
     canViewAllReservations: false,
     canEditAllReservations: false,
     canDeleteAllReservations: false,
+    
+    // Usuarios
+    canManageUsers: false,
     canAccessAdminPanel: false,
+    
+    // Legacy compat
+    canManageRooms: false,
   },
 }
 
-export const getPermissions = (role: RoleType) => {
+export const getPermissions = (role: RoleType): PermissionSet => {
   return PERMISSIONS[role] || PERMISSIONS[RoleType.CLIENTE]
 }
 

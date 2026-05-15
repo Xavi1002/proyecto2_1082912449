@@ -1,10 +1,17 @@
 import { Request, Response } from 'express'
-import { Op, sequelize } from 'sequelize'
+import { Op } from 'sequelize'
+import sequelize from '../config/database'
+import Client from '../models/Client'
 import Reservation, { ReservationStatus } from '../models/Reservation'
 import Room, { RoomStatus } from '../models/Room'
 import User from '../models/User'
 import { canViewReservation, canEditReservation, canDeleteReservation } from '../utils/permissions'
 import { RoleType } from '../models/Role'
+import { recordAudit } from '../utils/audit'
+
+const ACTIVE_RESERVATION_STATUSES = [ReservationStatus.PENDING, ReservationStatus.CONFIRMED]
+
+const formatDateForMessage = (value: Date) => value.toISOString().split('T')[0]
 
 // Verificar disponibilidad de habitaciones
 export const checkAvailability = async (req: Request, res: Response) => {
@@ -33,9 +40,7 @@ export const checkAvailability = async (req: Request, res: Response) => {
     const bookedRooms = await Reservation.findAll({
       attributes: ['roomId'],
       where: {
-        status: {
-          [Op.notIn]: [ReservationStatus.CANCELLED],
-        },
+        status: { [Op.in]: ACTIVE_RESERVATION_STATUSES },
         [Op.or]: [
           {
             checkInDate: { [Op.lt]: checkOut },
@@ -79,7 +84,7 @@ export const checkAvailability = async (req: Request, res: Response) => {
 // Crear reserva
 export const createReservation = async (req: Request, res: Response) => {
   try {
-    const { roomId, checkInDate, checkOutDate, numberOfGuests, specialRequests } = req.body
+    const { roomId, clientId, checkInDate, checkOutDate, numberOfGuests, specialRequests } = req.body
     const userId = req.user?.id
 
     if (!userId) {
@@ -108,19 +113,35 @@ export const createReservation = async (req: Request, res: Response) => {
       })
     }
 
-    // Verificar que el cuarto existe
+    // 1. Verificar habitación existe y está disponible
     const room = await Room.findByPk(roomId)
     if (!room) {
       return res.status(404).json({ error: 'Habitación no encontrada' })
     }
 
-    // Verificar disponibilidad
-    const conflictingReservations = await Reservation.count({
+    if (room.status !== RoomStatus.DISPONIBLE) {
+      return res.status(409).json({ error: 'La habitación no está disponible' })
+    }
+
+    let reservationUserId = userId
+    let reservationClientId: number | null = null
+
+    if (clientId) {
+      const client = await Client.findByPk(clientId)
+
+      if (!client) {
+        return res.status(404).json({ error: 'Cliente no encontrado' })
+      }
+
+      reservationClientId = client.id
+      reservationUserId = client.userId || reservationUserId
+    }
+
+    // 2. Verificar solapamiento con la query del plan
+    const conflictingReservation = await Reservation.findOne({
       where: {
         roomId,
-        status: {
-          [Op.notIn]: [ReservationStatus.CANCELLED],
-        },
+        status: { [Op.in]: ACTIVE_RESERVATION_STATUSES },
         [Op.or]: [
           {
             checkInDate: { [Op.lt]: checkOut },
@@ -130,15 +151,16 @@ export const createReservation = async (req: Request, res: Response) => {
       },
     })
 
-    if (conflictingReservations > 0) {
+    if (conflictingReservation) {
       return res.status(409).json({
-        error: 'La habitación no está disponible en esas fechas',
+        error: `La habitación no está disponible del ${formatDateForMessage(checkIn)} al ${formatDateForMessage(checkOut)}. Conflicto con una reserva existente del ${formatDateForMessage(conflictingReservation.checkInDate)} al ${formatDateForMessage(conflictingReservation.checkOutDate)}.`,
       })
     }
 
-    // Calcular precio total
+    // 3. Calcular noches y total con snapshot del precio
     const days = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24))
-    const totalPrice = parseFloat(room.pricePerNight.toString()) * days
+    const pricePerNightSnapshot = parseFloat(room.pricePerNight.toString())
+    const totalPrice = pricePerNightSnapshot * days
 
     // Validar número de huéspedes
     if (numberOfGuests && numberOfGuests > room.capacity) {
@@ -147,14 +169,35 @@ export const createReservation = async (req: Request, res: Response) => {
       })
     }
 
+    // 4. INSERT en reservations con price_per_night_snapshot
     const reservation = await Reservation.create({
-      userId,
+      userId: reservationUserId,
+      clientId: reservationClientId,
       roomId,
       checkInDate: checkIn,
       checkOutDate: checkOut,
       numberOfGuests: numberOfGuests || 1,
       totalPrice,
+      pricePerNightSnapshot,
       specialRequests: specialRequests || '',
+      status: ReservationStatus.CONFIRMED,
+    })
+
+    // 5. UPDATE rooms SET status='ocupada'
+    await room.update({ status: RoomStatus.OCUPADA })
+
+    // 6. recordAudit
+    await recordAudit({
+      action: 'create_reservation',
+      entity: 'reservation',
+      entityId: reservation.id,
+      actorUserId: userId,
+      metadata: {
+        roomId,
+        clientId: reservationClientId,
+        checkInDate: formatDateForMessage(checkIn),
+        checkOutDate: formatDateForMessage(checkOut),
+      },
     })
 
     // Cargar relaciones
@@ -162,6 +205,7 @@ export const createReservation = async (req: Request, res: Response) => {
       include: [
         { model: User, as: 'user', attributes: { exclude: ['password'] } },
         { model: Room, as: 'room' },
+        { model: Client, as: 'client' },
       ],
     })
 
@@ -206,6 +250,7 @@ export const getReservations = async (req: Request, res: Response) => {
       include: [
         { model: User, as: 'user', attributes: { exclude: ['password'] } },
         { model: Room, as: 'room' },
+        { model: Client, as: 'client' },
       ],
       order: [['checkInDate', 'DESC']],
     })
@@ -231,6 +276,7 @@ export const getReservationById = async (req: Request, res: Response) => {
       include: [
         { model: User, as: 'user', attributes: { exclude: ['password'] } },
         { model: Room, as: 'room' },
+        { model: Client, as: 'client' },
       ],
     })
 
@@ -340,6 +386,7 @@ export const updateReservation = async (req: Request, res: Response) => {
       include: [
         { model: User, as: 'user', attributes: { exclude: ['password'] } },
         { model: Room, as: 'room' },
+        { model: Client, as: 'client' },
       ],
     })
 
@@ -372,13 +419,29 @@ export const cancelReservation = async (req: Request, res: Response) => {
       })
     }
 
-    if (reservation.status === ReservationStatus.CANCELLED) {
-      return res.status(400).json({
-        error: 'La reserva ya está cancelada',
+    if (!ACTIVE_RESERVATION_STATUSES.includes(reservation.status)) {
+      return res.status(409).json({
+        error: 'Solo se pueden cancelar reservas activas',
       })
     }
 
     await reservation.update({ status: ReservationStatus.CANCELLED })
+
+    const room = await Room.findByPk(reservation.roomId)
+    if (room) {
+      await room.update({ status: RoomStatus.DISPONIBLE })
+    }
+
+    await recordAudit({
+      action: 'cancel_reservation',
+      entity: 'reservation',
+      entityId: reservation.id,
+      actorUserId: userId || 0,
+      metadata: {
+        roomId: reservation.roomId,
+        userId: reservation.userId,
+      },
+    })
 
     res.json({
       message: 'Reserva cancelada exitosamente',
@@ -403,6 +466,7 @@ export const getMyReservations = async (req: Request, res: Response) => {
       include: [
         { model: User, as: 'user', attributes: { exclude: ['password'] } },
         { model: Room, as: 'room' },
+        { model: Client, as: 'client' },
       ],
       order: [['checkInDate', 'DESC']],
     })
@@ -433,12 +497,12 @@ export const getReservationStatistics = async (req: Request, res: Response) => {
         status: { [Op.ne]: ReservationStatus.CANCELLED },
       },
       raw: true,
-    })
+    }) as { total: string | null } | null
 
     res.json({
       total,
       byStatus: Object.fromEntries(byStatus.map((s: any) => [s.status, s.count])),
-      totalRevenue: parseFloat(totalRevenue?.total || 0),
+      totalRevenue: parseFloat(totalRevenue?.total || '0'),
     })
   } catch (error) {
     console.error('Error al obtener estadísticas:', error)

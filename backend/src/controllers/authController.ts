@@ -36,6 +36,7 @@ export const register = async (req: Request, res: Response) => {
       email,
       password: hashedPassword,
       roleId: roleRecord.id,
+      mustChangePassword: false,
     })
 
     // Generar token
@@ -54,6 +55,7 @@ export const register = async (req: Request, res: Response) => {
         name: user.name,
         email: user.email,
         role: roleRecord.name,
+        mustChangePassword: user.mustChangePassword,
       },
     })
   } catch (error) {
@@ -106,6 +108,7 @@ export const login = async (req: Request, res: Response) => {
         name: user.name,
         email: user.email,
         role: roleRecord?.name,
+        mustChangePassword: user.mustChangePassword,
       },
     })
   } catch (error) {
@@ -143,6 +146,7 @@ export const getCurrentUser = async (req: Request, res: Response) => {
       name: currentUser.name,
       email: currentUser.email,
       role: currentUser.role?.name || req.user.role,
+      mustChangePassword: (user as any).mustChangePassword || false,
     })
   } catch (error) {
     console.error('Error al obtener usuario actual:', error)
@@ -153,4 +157,41 @@ export const getCurrentUser = async (req: Request, res: Response) => {
 export const logout = (req: Request, res: Response) => {
   // En aplicaciones SPA, el logout se maneja en el cliente eliminando el token
   res.json({ message: 'Sesión cerrada. Por favor, elimine el token del cliente.' })
+}
+
+export const changePassword = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id
+    const { currentPassword, newPassword } = req.body
+
+    if (!userId) {
+      return res.status(401).json({ error: 'No autenticado' })
+    }
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'currentPassword y newPassword son requeridos' })
+    }
+
+    if (String(newPassword).length < 6) {
+      return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 6 caracteres' })
+    }
+
+    const user = await User.findByPk(userId)
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' })
+    }
+
+    const matches = await comparePasswords(String(currentPassword), user.password)
+    if (!matches) {
+      return res.status(401).json({ error: 'La contraseña actual es incorrecta' })
+    }
+
+    const hashedPassword = await hashPassword(String(newPassword))
+    await user.update({ password: hashedPassword, mustChangePassword: false })
+
+    return res.json({ message: 'Contraseña actualizada exitosamente' })
+  } catch (error) {
+    console.error('Error al cambiar contraseña:', error)
+    return res.status(500).json({ error: 'Error al cambiar contraseña' })
+  }
 }

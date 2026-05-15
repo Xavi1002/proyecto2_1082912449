@@ -20,6 +20,20 @@ export default function ProtectedRoute({
     }
   }, [isAuthenticated, isLoading, router])
 
+  useEffect(() => {
+    if (isLoading || !isAuthenticated || requiredRoles.length === 0) {
+      return
+    }
+
+    if (!requiredRoles.includes(user?.role || '')) {
+      if (user?.role === 'Cliente') {
+        router.replace('/my-reservations')
+      } else {
+        router.replace('/dashboard')
+      }
+    }
+  }, [isLoading, isAuthenticated, requiredRoles, user?.role, router])
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-primary-900 to-slate-900 flex items-center justify-center">
@@ -39,23 +53,11 @@ export default function ProtectedRoute({
     )
   }
 
-  // Si se especifican roles requeridos, verificar
+  // Redirect silencioso cuando no cumple rol
   if (requiredRoles.length > 0 && !requiredRoles.includes(user?.role || '')) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-primary-900 to-slate-900 flex items-center justify-center px-4">
-        <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-8 max-w-md w-full text-center">
-          <div className="text-5xl mb-4">🔐</div>
-          <h1 className="text-3xl font-bold text-white mb-2">Acceso Denegado</h1>
-          <p className="text-slate-300 mb-6">
-            No tienes permisos para acceder a esta página.
-          </p>
-          <button
-            onClick={() => router.replace('/')}
-            className="w-full py-2 px-4 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors duration-200"
-          >
-            Volver al inicio
-          </button>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-hm-text-secondary">Redirigiendo...</p>
       </div>
     )
   }
