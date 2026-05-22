@@ -2,9 +2,9 @@
 // Login - Crea JWT en cookie
 
 import { NextRequest, NextResponse } from 'next/server';
-import { authenticateUser, createJWT, getSetCookieHeader, verifyPassword } from '@/lib/auth';
+import { createJWT, getSetCookieHeader } from '@/lib/auth';
 import { LoginRequestSchema } from '@/lib/schemas';
-import { recordUserAudit, updateLastLogin } from '@/lib/dataService';
+import { authenticateUser, recordUserAudit, updateLastLogin } from '@/lib/dataService';
 import { ZodError } from 'zod';
 
 export async function POST(req: NextRequest) {
