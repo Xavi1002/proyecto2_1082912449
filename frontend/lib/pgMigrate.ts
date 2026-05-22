@@ -1,7 +1,7 @@
 // lib/pgMigrate.ts
 // Ejecuta migraciones SQL en Supabase Postgres
 
-import { createPool, Pool } from 'pg';
+import { Pool } from 'pg';
 import { readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 
@@ -20,7 +20,7 @@ function getPool(): Pool {
     throw new Error('DATABASE_URL no configurado');
   }
 
-  _pool = createPool({
+  _pool = new Pool({
     connectionString: DATABASE_URL,
   });
 

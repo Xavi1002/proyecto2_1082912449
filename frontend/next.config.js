@@ -1,15 +1,8 @@
-// next.config.ts
-// Configuración de Next.js para HotelManager Pro
-
-import type { NextConfig } from 'next';
-
-const nextConfig: NextConfig = {
-  // TypeScript
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   typescript: {
     tsconfigPath: './tsconfig.json',
   },
-
-  // Headers - CERO CACHÉ para API routes
   async headers() {
     return [
       {
@@ -27,14 +20,10 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-
-  // Configuración experimental para App Router
   experimental: {
     esmExternals: true,
   },
-
-  // Environment variables
   env: {},
 };
 
-export default nextConfig;
+module.exports = nextConfig;

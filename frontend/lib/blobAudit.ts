@@ -1,7 +1,7 @@
 // lib/blobAudit.ts
 // Gestión de auditoría en Vercel Blob
 
-import { put, get, del } from '@vercel/blob';
+import { put, list, del } from '@vercel/blob';
 import type { AuditEntry, AuditAction, AuditEntity } from './types';
 
 const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
@@ -9,6 +9,22 @@ const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
 interface BlobLockEntry {
   locked_at: string;
   locked_by: string;
+}
+
+async function readBlobJson<T>(pathname: string, token: string): Promise<T | null> {
+  const listed = await list({ prefix: pathname, token, limit: 10 });
+  const blob = listed.blobs.find((item) => item.pathname === pathname);
+
+  if (!blob) {
+    return null;
+  }
+
+  const response = await fetch(blob.downloadUrl, { cache: 'no-store' });
+  if (!response.ok) {
+    throw new Error(`Error leyendo blob ${pathname}: ${response.status}`);
+  }
+
+  return (await response.json()) as T;
 }
 
 /**
@@ -82,16 +98,9 @@ export async function recordAudit(entry: AuditEntry): Promise<void> {
     // Obtener contenido actual del archivo (append-only)
     let entries: AuditEntry[] = [];
     try {
-      const existing = await get(filename, { token });
-      if (existing) {
-        const content = await existing.text();
-        entries = JSON.parse(content);
-      }
-    } catch (error: any) {
-      // El archivo no existe aún, comenzar con array vacío
-      if (error.code !== 'not_found') {
-        console.error('Error leyendo auditoría:', error);
-      }
+      entries = (await readBlobJson<AuditEntry[]>(filename, token)) || [];
+    } catch (error) {
+      console.error('Error leyendo auditoría:', error);
     }
 
     // Añadir la nueva entrada
@@ -100,7 +109,7 @@ export async function recordAudit(entry: AuditEntry): Promise<void> {
     // Guardar el archivo actualizado (sobrescribe completamente)
     await put(filename, JSON.stringify(entries, null, 2), {
       token,
-      access: 'private',
+      access: 'public',
       contentType: 'application/json',
     });
   } catch (error) {
@@ -121,17 +130,8 @@ export async function readAuditMonth(yyyymm: string): Promise<AuditEntry[]> {
     const filename = getAuditFilename(yyyymm);
     const token = getBlobToken();
 
-    const blob = await get(filename, { token });
-    if (!blob) {
-      return [];
-    }
-
-    const content = await blob.text();
-    return JSON.parse(content);
-  } catch (error: any) {
-    if (error.code === 'not_found') {
-      return [];
-    }
+    return (await readBlobJson<AuditEntry[]>(filename, token)) || [];
+  } catch (error) {
     console.error('Error leyendo auditoría:', error);
     return [];
   }
@@ -149,7 +149,13 @@ export async function deleteAuditMonth(yyyymm: string): Promise<void> {
     const filename = getAuditFilename(yyyymm);
     const token = getBlobToken();
 
-    await del(filename, { token });
+    const listed = await list({ prefix: filename, token, limit: 10 });
+    const blob = listed.blobs.find((item) => item.pathname === filename);
+    if (!blob) {
+      return;
+    }
+
+    await del(blob.url, { token });
   } catch (error) {
     console.error('Error borrando auditoría:', error);
     throw error;

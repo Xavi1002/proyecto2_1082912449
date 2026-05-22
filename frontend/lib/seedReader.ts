@@ -34,8 +34,9 @@ function loadSeedData(): SeedData {
   try {
     const seedPath = join(process.cwd(), 'data', 'seed.json');
     const content = readFileSync(seedPath, 'utf-8');
-    _seedData = JSON.parse(content);
-    return _seedData;
+    const parsed = JSON.parse(content) as SeedData;
+    _seedData = parsed;
+    return parsed;
   } catch (error) {
     console.error('Error loading seed.json:', error);
     return { users: [], rooms: [] };

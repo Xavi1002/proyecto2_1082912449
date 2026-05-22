@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     if (error instanceof ZodError) {
       return NextResponse.json(
-        { error: 'Datos inválidos', details: error.errors },
+        { error: 'Datos inválidos', details: error.issues },
         { status: 400 }
       );
     }

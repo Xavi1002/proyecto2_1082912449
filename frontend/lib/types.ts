@@ -33,6 +33,7 @@ export interface SafeUser {
 
 // JWT Payload
 export interface JWTPayload {
+  [key: string]: unknown;
   userId: string;
   email: string;
   role: UserRole;
