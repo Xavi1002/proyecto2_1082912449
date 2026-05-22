@@ -24,7 +24,7 @@
 | 3 | Gestión de Habitaciones | Ingeniero Fullstack | ✅ Completada | 2026-05-15 | 2026-05-15 | CRUD con RN-03, RN-06, RN-08 |
 | 4 | Gestión de Clientes | Ingeniero Fullstack | ✅ Completada | 2026-05-15 | 2026-05-15 | Clientes + búsqueda + portal vinculado |
 | 5 | Sistema de Reservas | Ingeniero Fullstack Senior | ✅ Completada | 2026-05-15 | 2026-05-15 | Reservas + snapshot + cancelación |
-| 6 | Administración y Pulido Final | Diseñador Frontend + Ingeniero Fullstack | ✅ Completada | 2026-05-15 | 2026-05-15 | Usuarios temporales + auditoría + errores globales + cierre visual |
+| 6 | Administración y Pulido Final | Diseñador Frontend + Ingeniero Fullstack | ✅ Completada | 2026-05-15 | 2026-05-22 | Usuarios temporales + auditoría + errores globales + cierre visual |
 
 ---
 
@@ -233,14 +233,68 @@
 - **Responsable:** Diseñador Frontend Obsesivo + Ingeniero Fullstack
 
 ### Entrada 10
-- **Fecha:** 2026-05-15
-- **Hora:** 16:55
+- **Fecha:** 2026-05-22
+- **Hora:** 10:30
 - **Fase:** 6 — Administración y Pulido Final
 - **Evento:** Cierre de Fase 6 ✅
-- **Detalle:** Se completó el pulido final: gestión de usuarios con contraseña temporal y modal de copia, auditoría consultable, empty states hoteleros, error handling global, restricción del portal de cliente y deshabilitación del registro público. Se validó el frontend con `npm run lint` y `npm run build`; el backend compila con `npm run build`. La URL de producción no fue publicada desde esta sesión.
+- **Detalle:** Se completó el pulido final con validación técnica en fecha de cierre: gestión de usuarios con contraseña temporal y `mustChangePassword`, auditoría consultable, empty states hoteleros, redirección silenciosa del cliente y ajuste de mensajes 409 (solapamiento de reserva con fechas del conflicto, habitación con reservas activas, email/documento duplicados). Se validó frontend con `npm run typecheck`, `npm run lint` y `npm run build`; backend compiló con `npm run build`.
 - **Responsable:** Diseñador Frontend Obsesivo + Ingeniero Fullstack
-- **Status Compilación:** ✅ `npm run lint`, `npm run build` y `backend npm run build`
+- **Status Compilación:** ✅ `npm run typecheck`, `npm run lint`, `npm run build` y `backend npm run build`
 - **Documentación:** `doc/RESUMEN_FASE_6_PULIDO_FINAL.md`
+
+### Entrada 11
+- **Fecha:** 2026-05-22
+- **Hora:** 11:10
+- **Fase:** 3 — Gestión de Habitaciones
+- **Evento:** Inicio de ajuste de Fase 3 🟦
+- **Detalle:** Se reabre técnicamente la Fase 3 para alinear validaciones de inventario de habitaciones con RN-03, RN-06 y RN-08, y estandarizar mensajes de error 409 para duplicados y eliminación con reservas activas.
+- **Responsable:** Ingeniero Fullstack
+
+### Entrada 12
+- **Fecha:** 2026-05-22
+- **Hora:** 11:25
+- **Fase:** 3 — Gestión de Habitaciones
+- **Evento:** Cierre de ajuste de Fase 3 ✅
+- **Detalle:** Se ajustó `POST /api/rooms` para capturar conflicto UNIQUE de Postgres (`23505`) con mensaje: "Ya existe una habitación con el número [X].". Se actualizó RN-08 en eliminación de habitación con mensaje: "La habitación tiene [N] reservas activas y no puede eliminarse.". Se confirmó control de acceso: Recepcionista puede `PATCH /api/rooms/:id/status` y no puede `POST /api/rooms` (403). Se agregó seed de 4 habitaciones demo (101, 102, 201, 301) al iniciar backend cuando el inventario está vacío.
+- **Responsable:** Ingeniero Fullstack
+- **Status Compilación:** ✅ `backend npm run build` y `frontend npm run typecheck`
+- **Documentación:** `doc/RESUMEN_FASE_3_HABITACIONES.md`
+
+### Entrada 13
+- **Fecha:** 2026-05-22
+- **Hora:** 12:05
+- **Fase:** 4 — Gestión de Clientes
+- **Evento:** Inicio de ajuste de Fase 4 🟦
+- **Detalle:** Se reabre técnicamente la Fase 4 para alinear RN-05 (mensajes exactos para email/documento duplicado), confirmar RN-07 por vínculo `clients.userId = JWT.userId`, y validar flujo de incorporación con contraseña temporal para portal del cliente.
+- **Responsable:** Ingeniero Fullstack
+
+### Entrada 14
+- **Fecha:** 2026-05-22
+- **Hora:** 12:20
+- **Fase:** 4 — Gestión de Clientes
+- **Evento:** Cierre de ajuste de Fase 4 ✅
+- **Detalle:** Se ajustaron mensajes 409 de RN-05 a textos exactos: "Ya existe un cliente con ese correo" y "Ya existe un cliente con ese número de documento.". Se confirmó búsqueda por `GET /api/clients/search?q=` con debounce de 300ms y límite de 8 resultados, y RN-07 con validación de cliente por `id + userId`. Se reforzó UX de contraseña temporal en frontend como dato visible una sola vez. No se avanzó a Fase 5.
+- **Responsable:** Ingeniero Fullstack
+- **Status Compilación:** ✅ `backend npm run build` y `frontend npm run typecheck`
+- **Documentación:** `doc/RESUMEN_FASE_4_CLIENTES.md`
+
+### Entrada 15
+- **Fecha:** 2026-05-22
+- **Hora:** 12:45
+- **Fase:** 5 — Sistema de Reservas
+- **Evento:** Inicio de ajuste de Fase 5 🟦
+- **Detalle:** Se reabre técnicamente la Fase 5 para verificar la secuencia crítica de `createReservation`, control de solapamiento, snapshot de precio RN-09, cancelación con liberación de habitación y alcance del portal cliente.
+- **Responsable:** Ingeniero Fullstack Senior
+
+### Entrada 16
+- **Fecha:** 2026-05-22
+- **Hora:** 13:05
+- **Fase:** 5 — Sistema de Reservas
+- **Evento:** Cierre de ajuste de Fase 5 ✅
+- **Detalle:** Se confirmó la secuencia operativa de reservas en servidor: validar habitación disponible, validar solapamiento, calcular noches/total con `pricePerNightSnapshot`, crear reserva, actualizar habitación a ocupada y auditar. Se mantuvo la cancelación con validación de estado activo (409 cuando no aplica) y liberación de habitación a disponible. Se documentó explícitamente el riesgo de inconsistencia si falla el paso 5 después del 4 en arquitectura secuencial. No se avanzó a Fase 6.
+- **Responsable:** Ingeniero Fullstack Senior
+- **Status Compilación:** ✅ `backend npm run build` y `frontend npm run typecheck`
+- **Documentación:** `doc/RESUMEN_FASE_5_RESERVAS.md`
 
 ---
 

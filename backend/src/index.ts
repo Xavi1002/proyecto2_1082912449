@@ -11,7 +11,7 @@ import reservationRoutes from './routes/reservations'
 import clientRoutes from './routes/clients'
 import User from './models/User'
 import Role, { RoleType } from './models/Role'
-import Room from './models/Room'
+import Room, { RoomStatus, RoomType } from './models/Room'
 import Reservation from './models/Reservation'
 import Client from './models/Client'
 
@@ -63,6 +63,17 @@ const startServer = async () => {
       if (created) {
         console.log(`✓ Rol ${roleData.name} creado`)
       }
+    }
+
+    const totalRooms = await Room.count()
+    if (totalRooms === 0) {
+      await Room.bulkCreate([
+        { roomNumber: '101', type: RoomType.INDIVIDUAL, status: RoomStatus.DISPONIBLE, pricePerNight: 120000, capacity: 1 },
+        { roomNumber: '102', type: RoomType.INDIVIDUAL, status: RoomStatus.DISPONIBLE, pricePerNight: 120000, capacity: 1 },
+        { roomNumber: '201', type: RoomType.DOBLE, status: RoomStatus.DISPONIBLE, pricePerNight: 200000, capacity: 2 },
+        { roomNumber: '301', type: RoomType.SUITE, status: RoomStatus.DISPONIBLE, pricePerNight: 380000, capacity: 4 },
+      ])
+      console.log('✓ Habitaciones demo iniciales creadas (101, 102, 201, 301)')
     }
 
     app.listen(PORT, () => {

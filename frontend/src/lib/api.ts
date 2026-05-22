@@ -31,6 +31,25 @@ const emitToast = (detail: ToastEventDetail) => {
   window.dispatchEvent(new CustomEvent<ToastEventDetail>('hm:toast', { detail }))
 }
 
+const isClientRoleCookie = () => {
+  if (typeof document === 'undefined') {
+    return false
+  }
+
+  const roleCookie = document.cookie
+    .split(';')
+    .map((chunk) => chunk.trim())
+    .find((chunk) => chunk.startsWith('auth_role='))
+
+  if (!roleCookie) {
+    return false
+  }
+
+  const encodedRole = roleCookie.split('=')[1] || ''
+  const decodedRole = decodeURIComponent(encodedRole).toLowerCase()
+  return decodedRole.includes('cliente')
+}
+
 const handleAuthExpiry = () => {
   if (typeof window === 'undefined') {
     return
@@ -59,6 +78,14 @@ if (typeof window !== 'undefined' && !apiWithFlags.__hmInterceptorsInstalled) {
 
       if (status === 401 && !requestUrl.includes('/auth/login') && !requestUrl.includes('/auth/register')) {
         handleAuthExpiry()
+      } else if (status === 403 && isClientRoleCookie()) {
+        const allowedClientPaths = ['/my-reservations', '/profile', '/login']
+        const currentPath = window.location.pathname
+        const isAlreadyAllowed = allowedClientPaths.some((path) => currentPath === path || currentPath.startsWith(`${path}/`))
+
+        if (!isAlreadyAllowed) {
+          window.location.replace('/my-reservations')
+        }
       } else if (status === 500) {
         emitToast({ message: 'Ocurrió un error interno. Intenta de nuevo.', tone: 'error' })
       }

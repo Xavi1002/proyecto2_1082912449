@@ -78,7 +78,16 @@ export default function ClientsPage() {
 
 			{temporaryPassword && (
 				<div style={styles.tempPasswordBox}>
-					Contraseña temporal (se muestra una sola vez): <strong>{temporaryPassword}</strong>
+					<div style={styles.tempPasswordHeader}>
+						<span>Contraseña temporal (se muestra una sola vez): <strong>{temporaryPassword}</strong></span>
+						<button
+							type="button"
+							onClick={() => setTemporaryPassword(null)}
+							style={styles.dismissButton}
+						>
+							Cerrar
+						</button>
+					</div>
 				</div>
 			)}
 
@@ -194,6 +203,21 @@ const styles = {
 		borderRadius: '8px',
 		padding: '0.8rem',
 		color: '#92400e',
+	},
+	tempPasswordHeader: {
+		display: 'flex',
+		alignItems: 'center',
+		justifyContent: 'space-between',
+		gap: '0.75rem',
+	},
+	dismissButton: {
+		border: '1px solid #f59e0b',
+		borderRadius: '8px',
+		padding: '0.35rem 0.6rem',
+		backgroundColor: '#fff',
+		color: '#92400e',
+		fontWeight: 700,
+		cursor: 'pointer',
 	},
 	error: {
 		marginBottom: '1rem',

@@ -11,6 +11,8 @@ const isValidRoomStatus = (value: string): value is RoomStatus =>
   Object.values(RoomStatus).includes(value as RoomStatus)
 
 const buildPrice = (value: unknown): number => Number(value)
+const buildDuplicateRoomMessage = (roomNumber: unknown): string =>
+  `Ya existe una habitación con el número ${String(roomNumber || '').trim()}.`
 
 export const getAllRooms = async (req: Request, res: Response) => {
   try {
@@ -95,7 +97,7 @@ export const createRoom = async (req: Request, res: Response) => {
     const existingRoom = await Room.findOne({ where: { roomNumber } })
     if (existingRoom) {
       return res.status(409).json({
-        error: `Ya existe una habitacion con el numero ${roomNumber}.`,
+        error: buildDuplicateRoomMessage(roomNumber),
       })
     }
 
@@ -112,14 +114,14 @@ export const createRoom = async (req: Request, res: Response) => {
     })
   } catch (error: any) {
     console.error('Error al crear habitacion:', error)
-    
-    // Capturar error UNIQUE constraint de Sequelize
-    if (error.name === 'SequelizeUniqueConstraintError') {
+
+    // Capturar UNIQUE constraint de Postgres (23505) y Sequelize como respaldo.
+    if (error?.original?.code === '23505' || error?.name === 'SequelizeUniqueConstraintError') {
       return res.status(409).json({
-        error: `Ya existe una habitacion con el numero ${req.body.roomNumber}.`,
+        error: buildDuplicateRoomMessage(req.body.roomNumber),
       })
     }
-    
+
     res.status(500).json({ error: 'Error al crear habitacion' })
   }
 }
@@ -215,7 +217,7 @@ export const deleteRoom = async (req: Request, res: Response) => {
 
     if (activeReservationCount > 0) {
       return res.status(409).json({
-        error: `La habitación tiene ${activeReservationCount} reserva(s) activa(s) y no puede eliminarse.`,
+        error: `La habitación tiene ${activeReservationCount} reservas activas y no puede eliminarse.`,
       })
     }
 

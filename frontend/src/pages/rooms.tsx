@@ -21,8 +21,6 @@ interface RoomStatistics {
   averagePrice: number
 }
 
-const receptionRole = 'Recepci' + String.fromCharCode(243) + 'n'
-
 function RoomsContent() {
   const { user } = useAuth()
   const [showForm, setShowForm] = useState(false)
@@ -30,7 +28,7 @@ function RoomsContent() {
   const [statistics, setStatistics] = useState<RoomStatistics | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
 
-  const canManageRooms = user?.role === 'SuperAdmin' || user?.role === receptionRole
+  const canManageRooms = user?.role === 'SuperAdmin'
 
   const refreshRooms = () => {
     setRefreshKey((current) => current + 1)

@@ -153,7 +153,7 @@ export const createReservation = async (req: Request, res: Response) => {
 
     if (conflictingReservation) {
       return res.status(409).json({
-        error: `La habitación no está disponible del ${formatDateForMessage(checkIn)} al ${formatDateForMessage(checkOut)}. Conflicto con una reserva existente del ${formatDateForMessage(conflictingReservation.checkInDate)} al ${formatDateForMessage(conflictingReservation.checkOutDate)}.`,
+        error: `La habitación ${room.roomNumber} ya tiene una reserva del ${formatDateForMessage(conflictingReservation.checkInDate)} al ${formatDateForMessage(conflictingReservation.checkOutDate)}.`,
       })
     }
 
@@ -184,6 +184,9 @@ export const createReservation = async (req: Request, res: Response) => {
     })
 
     // 5. UPDATE rooms SET status='ocupada'
+    // Riesgo operativo conocido: si este paso falla después del INSERT,
+    // la reserva queda creada sin reflejar ocupación en la habitación.
+    // En esta arquitectura se ejecuta en secuencia inmediata y se documenta en Fase 5.
     await room.update({ status: RoomStatus.OCUPADA })
 
     // 6. recordAudit
