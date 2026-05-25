@@ -7,7 +7,12 @@ export default function Home() {
   const { isAuthenticated, isLoading, user } = useAuth()
 
   useEffect(() => {
-    if (isLoading || !isAuthenticated || !user) return
+    if (isLoading) return
+
+    if (!isAuthenticated || !user) {
+      router.replace('/login')
+      return
+    }
 
     if (user.role === 'Cliente') {
       router.replace('/my-reservations')
