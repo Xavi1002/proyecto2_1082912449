@@ -1,203 +1,74 @@
-# Proyecto 2 - Fullstack Application
+# Proyecto 2 — Fullstack (Next.js + Express + Sequelize) en Vercel
 
-Proyecto fullstack completo con Next.js (frontend), Express (backend) y PostgreSQL (base de datos).
+Aplicación fullstack en un solo proyecto Next.js. El backend Express vive bajo una API catch-all (`src/pages/api/[...slug].ts`) y se ejecuta como Vercel Function. El frontend (Pages Router) llama a `/api/*` con rutas relativas.
 
-## Estructura del Proyecto
+## Estructura
 
 ```
-proyecto2_1082912449/
-├── frontend/           # Aplicación Next.js (React)
-│   ├── src/
-│   │   ├── pages/      # Páginas y rutas
-│   │   ├── components/ # Componentes reutilizables
-│   │   ├── lib/        # Utilidades y helpers
-│   │   └── styles/     # Estilos
-│   ├── public/         # Archivos estáticos
-│   └── package.json
-├── backend/            # API REST con Express
-│   ├── src/
-│   │   ├── config/     # Configuración de BD
-│   │   ├── models/     # Modelos Sequelize
-│   │   ├── controllers/# Lógica de negocio
-│   │   ├── routes/     # Rutas de la API
-│   │   ├── middleware/ # Middlewares
-│   │   └── utils/      # Funciones utilitarias
-│   └── package.json
-├── doc/                # Documentación del proyecto
-├── docker-compose.yml  # Configuración Docker para PostgreSQL
-└── README.md           # Este archivo
+.
+├── src/
+│   ├── pages/              # Next.js (Pages Router) — UI
+│   │   └── api/
+│   │       ├── [...slug].ts   # Catch-all que delega a Express
+│   │       └── dashboard.ts   # API route nativa de Next
+│   ├── components/         # Componentes React
+│   ├── lib/                # Cliente axios + helpers
+│   ├── styles/             # Tailwind
+│   └── server/             # Backend (Express + Sequelize)
+│       ├── app.ts
+│       ├── config/database.ts
+│       ├── models/ controllers/ routes/ middleware/ utils/
+├── middleware.ts           # Middleware de Next (auth por cookie)
+├── next.config.js
+├── tailwind.config.js
+├── vercel.json
+└── package.json
 ```
 
-## Características Principales
-
-- ✅ Sistema de autenticación JWT completo
-- ✅ Registro e inicio de sesión seguros
-- ✅ Sistema de roles (SuperAdmin, Recepción, Cliente)
-- ✅ Contraseñas hasheadas con bcrypt
-- ✅ Rutas protegidas en frontend
-- ✅ API REST escalable
-- ✅ Base de datos PostgreSQL
-- ✅ Docker para desarrollo
-
-## Módulos Implementados
-
-- Node.js 18+
-- npm o yarn
-- Docker y Docker Compose (opcional, para PostgreSQL)
-
-## Instalación y Configuración
-
-### 1. Base de Datos (PostgreSQL)
-
-Opción A: Usando Docker Compose (recomendado)
-```bash
-docker-compose up -d
-```
-
-Opción B: PostgreSQL local
-Crear base de datos manualmente:
-```sql
-CREATE DATABASE proyecto2_db;
-```
-
-### 2. Backend
+## Arranque local
 
 ```bash
-cd backend
 npm install
 npm run dev
 ```
 
-El servidor estará disponible en `http://localhost:3001`
+Abre `http://localhost:3000`. Sin variables de entorno, la app cae automáticamente a una base **SQLite** en `./data/dev.sqlite` (no requiere Docker ni Postgres).
 
-### 3. Frontend
+### Variables de entorno (opcionales en local)
 
-En otra terminal:
-```bash
-cd frontend
-npm install
-npm run dev
+Copia `.env.example` a `.env.local` si necesitas personalizar:
+
+```env
+JWT_SECRET=cambia-este-secreto-en-produccion
+JWT_EXPIRES_IN=7d
+
+# Para usar Postgres en lugar de SQLite:
+# DATABASE_URL=postgres://user:password@host:5432/db
 ```
 
-La aplicación estará disponible en `http://localhost:3000`
+## Despliegue en Vercel
 
-## Variables de Entorno
+1. Sube este repo a GitHub.
+2. En Vercel: **Add New → Project → Import** el repo. El framework se detecta como Next.js.
+3. Provee una base de datos (Marketplace → Neon Postgres, o usa Supabase). Copia el `DATABASE_URL`.
+4. Configura las variables en **Project → Settings → Environment Variables**:
+   - `DATABASE_URL` (Postgres)
+   - `JWT_SECRET` (cadena aleatoria)
+5. Deploy. La primera petición creará las tablas (`sequelize.sync({ alter: true })`) y sembrará los roles base.
 
-### Backend (.env)
-```
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=proyecto2_db
-DB_USER=postgres
-DB_PASSWORD=postgres
-PORT=3001
-NODE_ENV=development
-CORS_ORIGIN=http://localhost:3000
-```
+## Endpoints principales
 
-### Frontend (.env.local)
-```
-NEXT_PUBLIC_API_URL=http://localhost:3001/api
-```
+- `GET  /api/health`
+- `POST /api/auth/register` · `POST /api/auth/login` · `GET /api/auth/me`
+- `GET/POST/PUT/DELETE /api/users`
+- `GET/POST/PUT/DELETE /api/rooms` · `GET /api/rooms/statistics`
+- `GET/POST/PUT/DELETE /api/reservations`
+- `GET/POST/PUT/DELETE /api/clients`
+- `GET /api/audit`
+- `GET /api/dashboard` (agregado por Next, mezcla rooms+reservations)
 
-## Desarrollo
+## Notas
 
-### Terminal 1 - Backend
-```bash
-cd backend
-npm run dev
-```
-
-### Terminal 2 - Frontend
-```bash
-cd frontend
-npm run dev
-```
-
-### Terminal 3 - PostgreSQL (si usas Docker)
-```bash
-docker-compose up
-```
-
-## Build para Producción
-
-### Backend
-```bash
-cd backend
-npm run build
-npm start
-```
-
-### Frontend
-```bash
-cd frontend
-npm run build
-npm run start
-```
-
-## API Endpoints
-
-### Health Check
-- `GET /api/health` - Estado del servidor
-
-### Usuarios
-- `GET /api/users` - Obtener todos
-- `GET /api/users/:id` - Obtener por ID
-- `POST /api/users` - Crear nuevo
-- `PUT /api/users/:id` - Actualizar
-- `DELETE /api/users/:id` - Eliminar
-
-## Tecnologías Utilizadas
-
-### Frontend
-- Next.js 14
-- React 18
-- TypeScript
-- Axios
-
-### Backend
-- Express.js
-- TypeScript
-- Sequelize (ORM)
-- PostgreSQL
-
-### DevOps
-- Docker
-- Docker Compose
-
-## Documentación
-
-Ver archivos en la carpeta `doc/`:
-- [arquitectura.md](doc/arquitectura.md) - Arquitectura del sistema
-- [estado.md](doc/estado.md) - Estado del proyecto
-- [implementacion.md](doc/implementacion.md) - Detalles de implementación
-- [prompts.md](doc/prompts.md) - Prompts de desarrollo
-- [autenticacion.md](doc/autenticacion.md) - Sistema de autenticación con JWT
-- [API_TESTS.md](doc/API_TESTS.md) - Pruebas de endpoints de API
-
-## Guía Rápida
-
-Ver [QUICKSTART.md](QUICKSTART.md) para instrucciones de inicio rápido.
-
-## API Endpoints
-
-### Autenticación
-- `POST /api/auth/register` - Registrar nuevo usuario
-- `POST /api/auth/login` - Iniciar sesión
-- `GET /api/auth/me` - Obtener usuario actual (requiere token)
-- `POST /api/auth/logout` - Cerrar sesión
-
-### Usuarios
-- `GET /api/users` - Obtener todos
-- `GET /api/users/:id` - Obtener por ID
-- `POST /api/users` - Crear nuevo
-- `PUT /api/users/:id` - Actualizar
-- `DELETE /api/users/:id` - Eliminar
-
-## Licencia
-
-ISC
-
-## Autor
-
-Xavi
+- Sin Docker. SQLite solo en dev como conveniencia; en Vercel **debes** usar Postgres (Supabase/Neon) porque el filesystem es efímero.
+- `bcryptjs` (puro JS) en vez de `bcrypt` para evitar problemas de compilación nativa en serverless.
+- La inicialización de la base de datos (auth + sync + seed de roles) se ejecuta de forma perezosa y cacheada en la primera invocación.

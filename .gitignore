@@ -38,6 +38,13 @@ out
 # Testing
 coverage
 
-# Docker
-.dockerignore
-docker-compose.override.yml
+# Local SQLite database
+data/
+*.sqlite
+
+# Vercel
+.vercel
+
+# Local tooling
+.claude
+tsconfig.tsbuildinfo

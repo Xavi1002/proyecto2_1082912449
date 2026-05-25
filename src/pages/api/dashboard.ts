@@ -1,5 +1,4 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-import axios from 'axios'
 
 type DashboardPayload = {
   kpis: {
@@ -18,18 +17,27 @@ type DashboardPayload = {
   mode: 'live' | 'seed'
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+const resolveBaseUrl = (req: NextApiRequest) => {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, '')
+  }
+  const proto = (req.headers['x-forwarded-proto'] as string) || 'http'
+  const host = req.headers.host
+  return `${proto}://${host}/api`
+}
 
-export default async function handler(_req: NextApiRequest, res: NextApiResponse<DashboardPayload>) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse<DashboardPayload>) {
+  const baseUrl = resolveBaseUrl(req)
   try {
     const [roomsRes, reservationsRes] = await Promise.all([
-      axios.get(`${API_URL}/rooms/statistics`),
-      axios.get(`${API_URL}/reservations`),
+      fetch(`${baseUrl}/rooms/statistics`),
+      fetch(`${baseUrl}/reservations`),
     ])
 
-    const rooms = roomsRes.data
-    const reservations = Array.isArray(reservationsRes.data?.reservations)
-      ? reservationsRes.data.reservations
+    const rooms = await roomsRes.json()
+    const reservationsBody = await reservationsRes.json()
+    const reservations = Array.isArray(reservationsBody?.reservations)
+      ? reservationsBody.reservations
       : []
 
     const today = new Date().toISOString().slice(0, 10)
