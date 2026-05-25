@@ -18,7 +18,10 @@ let initPromise: Promise<void> | null = null
 
 async function initDatabase() {
   await sequelize.authenticate()
-  await sequelize.sync({ alter: true })
+  // sync() sin alter:true. Las tablas se crean si no existen.
+  // alter:true genera SQL malformado en Postgres para constraints UNIQUE.
+  // Si necesitas cambiar el schema, hazlo via migracion SQL en Supabase.
+  await sequelize.sync()
 
   const roles = [
     { name: RoleType.SUPERADMIN, description: 'Administrador del sistema' },
