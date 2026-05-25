@@ -7,6 +7,8 @@ const databaseUrl =
   process.env.POSTGRES_URL_NON_POOLING ||
   process.env.POSTGRES_URL
 
+const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME)
+
 let sequelize: Sequelize
 
 if (databaseUrl) {
@@ -31,7 +33,15 @@ if (databaseUrl) {
     dialect: 'postgres',
     logging: false,
   })
+} else if (isServerless) {
+  throw new Error(
+    'Falta DATABASE_URL / POSTGRES_URL_NON_POOLING / POSTGRES_URL en el entorno serverless. ' +
+      'Configura las variables de la integracion Vercel <-> Supabase en Project Settings -> Environment Variables ' +
+      '(asegurate de que esten habilitadas para Production y Preview).'
+  )
 } else {
+  // Fallback SQLite solo para desarrollo local. En serverless el filesystem
+  // es de solo lectura (excepto /tmp), por eso este bloque esta bloqueado arriba.
   const dataDir = path.join(process.cwd(), 'data')
   if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir, { recursive: true })
