@@ -36,19 +36,16 @@ export default function ProtectedRoute({
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-primary-900 to-slate-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-500 mx-auto mb-4"></div>
-          <p className="text-slate-300">Cargando...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-sand-50">
+        <p className="text-sm text-ink-500">Cargando…</p>
       </div>
     )
   }
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-primary-900 to-slate-900 flex items-center justify-center">
-        <p className="text-slate-300">Redirigiendo...</p>
+      <div className="min-h-screen flex items-center justify-center bg-sand-50">
+        <p className="text-sm text-ink-500">Redirigiendo…</p>
       </div>
     )
   }
@@ -56,8 +53,8 @@ export default function ProtectedRoute({
   // Redirect silencioso cuando no cumple rol
   if (requiredRoles.length > 0 && !requiredRoles.includes(user?.role || '')) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-hm-text-secondary">Redirigiendo...</p>
+      <div className="min-h-screen flex items-center justify-center bg-sand-50">
+        <p className="text-sm text-ink-500">Redirigiendo…</p>
       </div>
     )
   }
