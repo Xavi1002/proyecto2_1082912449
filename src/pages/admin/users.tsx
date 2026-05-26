@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import ProtectedRoute from '../../components/ProtectedRoute'
+import { Avatar, Badge, Button, Input, Modal, Select, Table, type Column } from '../../components/ui'
+import { Copy, Plus } from '../../components/icons'
 import { api } from '../../lib/api'
 
 type UserRecord = {
@@ -8,6 +10,7 @@ type UserRecord = {
 	email: string
 	isActive: boolean
 	mustChangePassword: boolean
+	createdAt?: string
 	role?: { name: string }
 }
 
@@ -23,7 +26,18 @@ const roleOptions = [
 	{ id: '3', label: 'Cliente' },
 ]
 
+const roleSelectOptions = roleOptions.map((option) => ({ value: option.id, label: option.label }))
+
 const emptyForm: CreateUserForm = { name: '', email: '', roleId: '3' }
+
+const formatDate = (value?: string) => {
+	if (!value) return '—'
+	try {
+		return new Date(value).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })
+	} catch {
+		return '—'
+	}
+}
 
 export default function AdminUsersPage() {
 	const [users, setUsers] = useState<UserRecord[]>([])
@@ -34,6 +48,7 @@ export default function AdminUsersPage() {
 	const [tempPassword, setTempPassword] = useState('')
 	const [createdEmail, setCreatedEmail] = useState('')
 	const [copyState, setCopyState] = useState<'idle' | 'copied'>('idle')
+	const [modalOpen, setModalOpen] = useState(false)
 
 	const fetchUsers = async () => {
 		try {
@@ -56,6 +71,23 @@ export default function AdminUsersPage() {
 		() => roleOptions.find((option) => option.id === form.roleId)?.label || 'Cliente',
 		[form.roleId]
 	)
+
+	const openCreateModal = () => {
+		setForm(emptyForm)
+		setTempPassword('')
+		setCreatedEmail('')
+		setCopyState('idle')
+		setError('')
+		setModalOpen(true)
+	}
+
+	const closeModal = () => {
+		setModalOpen(false)
+		setTempPassword('')
+		setCreatedEmail('')
+		setCopyState('idle')
+		setForm(emptyForm)
+	}
 
 	const handleCreate = async (event: React.FormEvent) => {
 		event.preventDefault()
@@ -91,128 +123,167 @@ export default function AdminUsersPage() {
 		window.setTimeout(() => setCopyState('idle'), 1800)
 	}
 
+	const columns: Column<UserRecord>[] = [
+		{
+			key: 'avatar',
+			header: '',
+			className: 'w-12',
+			render: (user) => <Avatar name={user.name} size="sm" />,
+		},
+		{
+			key: 'name',
+			header: 'Nombre',
+			render: (user) => <span className="font-medium text-ink-900">{user.name}</span>,
+		},
+		{
+			key: 'email',
+			header: 'Correo',
+			render: (user) => <span className="text-ink-500">{user.email}</span>,
+		},
+		{
+			key: 'role',
+			header: 'Rol',
+			render: (user) => <Badge tone="info">{user.role?.name || 'N/A'}</Badge>,
+		},
+		{
+			key: 'isActive',
+			header: 'Estado',
+			render: (user) =>
+				user.isActive ? (
+					<Badge tone="success">Activo</Badge>
+				) : (
+					<Badge tone="neutral">Inactivo</Badge>
+				),
+		},
+		{
+			key: 'mustChangePassword',
+			header: 'Contraseña',
+			render: (user) =>
+				user.mustChangePassword ? (
+					<Badge tone="warning">Pendiente</Badge>
+				) : (
+					<span className="text-xs text-ink-400">—</span>
+				),
+		},
+		{
+			key: 'createdAt',
+			header: 'Creado',
+			render: (user) => <span className="text-xs text-ink-500">{formatDate(user.createdAt)}</span>,
+		},
+	]
+
 	return (
 		<ProtectedRoute requiredRoles={['SuperAdmin']}>
-			<header className="mb-6">
-				<p className="text-sm font-semibold uppercase tracking-wide text-hm-text-secondary">Administración</p>
-				<h1 className="mt-2 text-3xl font-bold text-hm-text-main">Usuarios</h1>
-				<p className="mt-2 text-sm text-hm-text-secondary">Crea cuentas internas con contraseña temporal y acceso controlado.</p>
+			<header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+				<div>
+					<p className="text-xs font-medium uppercase tracking-widest text-copper-500">Administración</p>
+					<h1 className="mt-2 font-display text-4xl text-ink-900">Usuarios</h1>
+					<p className="mt-2 text-ink-500 max-w-2xl">
+						Crea cuentas internas con contraseña temporal y acceso controlado.
+					</p>
+				</div>
+				<Button variant="primary" icon={<Plus size={16} />} onClick={openCreateModal}>
+					Nuevo usuario
+				</Button>
 			</header>
 
-			{tempPassword ? (
-				<div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-900 shadow-sm">
-					<div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+			{error && !modalOpen && (
+				<div className="mb-6 p-4 bg-[#F5DDDB] text-danger-500 text-sm rounded-md border border-danger-500/20">
+					{error}
+				</div>
+			)}
+
+			{loading ? (
+				<div className="text-center text-ink-500 py-12">Cargando usuarios...</div>
+			) : (
+				<Table
+					columns={columns}
+					data={users}
+					empty={
+						<div className="bg-white border border-sand-200 rounded-xl shadow-paper px-6 py-16 text-center">
+							<p className="text-sm text-ink-500">No hay usuarios registrados.</p>
+						</div>
+					}
+				/>
+			)}
+
+			<Modal
+				open={modalOpen}
+				onClose={closeModal}
+				title={tempPassword ? 'Contraseña temporal generada' : 'Nuevo usuario'}
+				footer={
+					tempPassword ? (
+						<>
+							<Button variant="ghost" onClick={closeModal}>Cerrar</Button>
+							<Button variant="secondary" icon={<Copy size={16} />} onClick={handleCopyPassword}>
+								{copyState === 'copied' ? 'Copiado' : 'Copiar'}
+							</Button>
+						</>
+					) : (
+						<>
+							<Button variant="ghost" type="button" onClick={closeModal}>Cancelar</Button>
+							<Button
+								variant="primary"
+								type="submit"
+								form="create-user-form"
+								loading={saving}
+							>
+								Crear usuario
+							</Button>
+						</>
+					)
+				}
+			>
+				{tempPassword ? (
+					<div className="space-y-4">
 						<div>
-							<p className="text-sm font-semibold uppercase tracking-wide text-amber-700">Contraseña temporal generada</p>
-							<h2 className="mt-1 text-xl font-bold text-amber-950">{createdEmail}</h2>
-							<p className="mt-1 text-sm text-amber-800">Se muestra una sola vez. El usuario deberá cambiarla al iniciar sesión.</p>
+							<p className="text-xs font-medium uppercase tracking-widest text-copper-500">Cuenta creada</p>
+							<p className="mt-1 font-display text-xl text-ink-900">{createdEmail}</p>
+							<p className="mt-2 text-sm text-ink-500">
+								Esta contraseña se muestra una sola vez. El usuario deberá cambiarla al iniciar sesión.
+							</p>
 						</div>
-						<div className="rounded-xl border border-amber-200 bg-white px-4 py-3 font-mono text-lg text-amber-950 shadow-inner">
-							{tempPassword}
-						</div>
-					</div>
-					<div className="mt-4 flex flex-wrap gap-3">
-						<button
-							type="button"
-							onClick={handleCopyPassword}
-							className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-amber-700"
-						>
-							{copyState === 'copied' ? 'Copiado' : 'Copiar'}
-						</button>
-						<button
-							type="button"
-							onClick={() => setTempPassword('')}
-							className="rounded-lg border border-amber-200 bg-white px-4 py-2 text-sm font-semibold text-amber-900 transition-colors hover:bg-amber-100"
-						>
-							Cerrar
-						</button>
-					</div>
-				</div>
-			) : null}
-
-			{error ? (
-				<div className="mb-6 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{error}</div>
-			) : null}
-
-			<section className="mb-6 rounded-2xl border border-hm-border bg-white p-6 shadow-sm">
-				<h2 className="text-xl font-semibold text-hm-text-main">Nuevo usuario</h2>
-				<form onSubmit={handleCreate} className="mt-4 grid gap-4 md:grid-cols-3">
-					<input
-						value={form.name}
-						onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
-						placeholder="Nombre completo"
-						className="rounded-lg border border-hm-border px-4 py-3"
-						required
-					/>
-					<input
-						type="email"
-						value={form.email}
-						onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
-						placeholder="Correo"
-						className="rounded-lg border border-hm-border px-4 py-3"
-						required
-					/>
-					<select
-						value={form.roleId}
-						onChange={(event) => setForm((current) => ({ ...current, roleId: event.target.value }))}
-						className="rounded-lg border border-hm-border px-4 py-3"
-					>
-						{roleOptions.map((option) => (
-							<option key={option.id} value={option.id}>{option.label}</option>
-						))}
-					</select>
-					<div className="md:col-span-3 flex items-center justify-between gap-4 rounded-xl bg-slate-50 px-4 py-3">
-						<p className="text-sm text-hm-text-secondary">Se generará una contraseña temporal para el rol {createdRoleLabel}.</p>
-						<button
-							type="submit"
-							disabled={saving}
-							className="rounded-lg bg-hm-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-						>
-							{saving ? 'Creando...' : 'Crear usuario'}
-						</button>
-					</div>
-				</form>
-			</section>
-
-			<section className="rounded-2xl border border-hm-border bg-white p-6 shadow-sm">
-				<div className="mb-4 flex items-center justify-between gap-4">
-					<h2 className="text-xl font-semibold text-hm-text-main">Usuarios existentes</h2>
-					<button type="button" onClick={fetchUsers} className="rounded-lg border border-hm-border px-4 py-2 text-sm font-medium text-hm-text-secondary">
-						Actualizar
-					</button>
-				</div>
-
-				{loading ? (
-					<p className="py-8 text-center text-hm-text-secondary">Cargando usuarios...</p>
-				) : users.length === 0 ? (
-					<div className="rounded-xl border border-dashed border-hm-border px-4 py-10 text-center text-hm-text-secondary">
-						No hay usuarios registrados.
+						<Input
+							label="Contraseña temporal"
+							readOnly
+							value={tempPassword}
+							className="font-mono tracking-wide"
+						/>
 					</div>
 				) : (
-					<div className="overflow-x-auto">
-						<table className="w-full text-left text-sm">
-							<thead>
-								<tr className="border-b border-hm-border text-hm-text-secondary">
-									<th className="py-2">Nombre</th>
-									<th className="py-2">Correo</th>
-									<th className="py-2">Rol</th>
-									<th className="py-2">Estado</th>
-								</tr>
-							</thead>
-							<tbody>
-								{users.map((user) => (
-									<tr key={user.id} className="border-b border-hm-border/60">
-										<td className="py-3 text-hm-text-main">{user.name}</td>
-										<td className="py-3 text-hm-text-secondary">{user.email}</td>
-										<td className="py-3 text-hm-text-secondary">{user.role?.name || 'N/A'}</td>
-										<td className="py-3 text-hm-text-secondary">{user.isActive ? 'Activo' : 'Inactivo'}</td>
-									</tr>
-								))}
-							</tbody>
-						</table>
-					</div>
+					<form id="create-user-form" onSubmit={handleCreate} className="space-y-4">
+						{error && (
+							<div className="p-3 bg-[#F5DDDB] text-danger-500 text-sm rounded-md border border-danger-500/20">
+								{error}
+							</div>
+						)}
+						<Input
+							label="Nombre completo"
+							value={form.name}
+							onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
+							placeholder="Nombre y apellido"
+							required
+						/>
+						<Input
+							label="Correo electrónico"
+							type="email"
+							value={form.email}
+							onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
+							placeholder="usuario@hotel.com"
+							required
+						/>
+						<Select
+							label="Rol"
+							value={form.roleId}
+							onChange={(event) => setForm((current) => ({ ...current, roleId: event.target.value }))}
+							options={roleSelectOptions}
+						/>
+						<p className="text-xs text-ink-500">
+							Se generará una contraseña temporal para el rol {createdRoleLabel}.
+						</p>
+					</form>
 				)}
-			</section>
+			</Modal>
 		</ProtectedRoute>
 	)
 }

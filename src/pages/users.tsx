@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import ProtectedRoute from '../components/ProtectedRoute'
-import RoleBasedAccess, { useHasRole } from '../components/RoleBasedAccess'
+import { useHasRole } from '../components/RoleBasedAccess'
+import { Avatar, Badge, Button, EmptyState, Input, Select, Table, type Column } from '../components/ui'
+import { Pencil, Trash, Users as UsersIcon } from '../components/icons'
 import { api } from '../lib/api'
 
 interface User {
@@ -13,6 +15,30 @@ interface User {
   }
   isActive: boolean
   createdAt: string
+}
+
+const roleOptions = [
+  { value: 'SuperAdmin', label: 'SuperAdmin' },
+  { value: 'Recepción', label: 'Recepción' },
+  { value: 'Cliente', label: 'Cliente' },
+]
+
+const statusOptions = [
+  { value: 'true', label: 'Activo' },
+  { value: 'false', label: 'Inactivo' },
+]
+
+const roleTone = (role?: string): 'danger' | 'info' | 'success' | 'neutral' => {
+  switch (role) {
+    case 'SuperAdmin':
+      return 'danger'
+    case 'Recepción':
+      return 'info'
+    case 'Cliente':
+      return 'success'
+    default:
+      return 'neutral'
+  }
 }
 
 export default function UsersPage() {
@@ -71,7 +97,7 @@ export default function UsersPage() {
     try {
       const roleMap: Record<string, number> = {
         SuperAdmin: 1,
-        Recepción: 2,
+        'Recepción': 2,
         Cliente: 3,
       }
 
@@ -110,332 +136,142 @@ export default function UsersPage() {
   if (!isSuperAdmin) {
     return (
       <ProtectedRoute>
-        <div style={styles.container}>
-          <div style={styles.errorBox}>
-            <h2>Acceso Denegado</h2>
-            <p>Solo los SuperAdmin pueden acceder a la gestión de usuarios.</p>
-          </div>
-        </div>
+        <header className="mb-8">
+          <p className="text-xs font-medium uppercase tracking-widest text-copper-500">Administración</p>
+          <h1 className="mt-2 font-display text-4xl text-ink-900">Usuarios</h1>
+        </header>
+        <EmptyState
+          icon={<UsersIcon size={20} />}
+          title="Acceso denegado"
+          description="Solo los SuperAdmin pueden acceder a la gestión de usuarios."
+        />
       </ProtectedRoute>
     )
   }
 
-  return (
-    <ProtectedRoute>
-      <div style={styles.container}>
-        <div style={styles.header}>
-          <div>
-            <h1>Gestión de Usuarios</h1>
-            <p style={styles.subtitle}>SuperAdmin - Gestión de cuentas de usuario</p>
-          </div>
-          <button onClick={fetchUsers} style={styles.refreshButton}>
-            Actualizar
-          </button>
-        </div>
-
-        {error && (
-          <div style={styles.errorBox}>
-            <p>{error}</p>
-          </div>
-        )}
-
-        {loading ? (
-          <div style={styles.loadingBox}>
-            <p>Cargando usuarios...</p>
+  const columns: Column<User>[] = [
+    {
+      key: 'avatar',
+      header: '',
+      className: 'w-12',
+      render: (user) => <Avatar name={user.name} size="sm" />,
+    },
+    {
+      key: 'name',
+      header: 'Nombre',
+      render: (user) =>
+        editingId === user.id ? (
+          <Input
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          />
+        ) : (
+          <span className="font-medium text-ink-900">{user.name}</span>
+        ),
+    },
+    {
+      key: 'email',
+      header: 'Correo',
+      render: (user) =>
+        editingId === user.id ? (
+          <Input
+            type="email"
+            value={formData.email}
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+          />
+        ) : (
+          <span className="text-ink-500">{user.email}</span>
+        ),
+    },
+    {
+      key: 'role',
+      header: 'Rol',
+      render: (user) =>
+        editingId === user.id ? (
+          <Select
+            value={formData.roleId}
+            onChange={(e) => setFormData({ ...formData, roleId: e.target.value })}
+            options={roleOptions}
+          />
+        ) : (
+          <Badge tone={roleTone(user.role?.name)}>{user.role?.name || 'N/A'}</Badge>
+        ),
+    },
+    {
+      key: 'isActive',
+      header: 'Estado',
+      render: (user) =>
+        editingId === user.id ? (
+          <Select
+            value={formData.isActive ? 'true' : 'false'}
+            onChange={(e) => setFormData({ ...formData, isActive: e.target.value === 'true' })}
+            options={statusOptions}
+          />
+        ) : user.isActive ? (
+          <Badge tone="success">Activo</Badge>
+        ) : (
+          <Badge tone="neutral">Inactivo</Badge>
+        ),
+    },
+    {
+      key: 'actions',
+      header: 'Acciones',
+      className: 'w-56',
+      render: (user) =>
+        editingId === user.id ? (
+          <div className="flex gap-2">
+            <Button size="sm" variant="primary" onClick={() => handleUpdate(user.id)}>
+              Guardar
+            </Button>
+            <Button size="sm" variant="ghost" onClick={handleCancel}>
+              Cancelar
+            </Button>
           </div>
         ) : (
-          <div style={styles.tableContainer}>
-            <table style={styles.table}>
-              <thead>
-                <tr style={styles.headerRow}>
-                  <th style={styles.th}>Nombre</th>
-                  <th style={styles.th}>Email</th>
-                  <th style={styles.th}>Rol</th>
-                  <th style={styles.th}>Estado</th>
-                  <th style={styles.th}>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} style={styles.emptyCell}>
-                      No hay usuarios
-                    </td>
-                  </tr>
-                ) : (
-                  users.map((user) => (
-                    <tr key={user.id} style={styles.bodyRow}>
-                      {editingId === user.id ? (
-                        <>
-                          <td style={styles.td}>
-                            <input
-                              type="text"
-                              value={formData.name}
-                              onChange={(e) =>
-                                setFormData({ ...formData, name: e.target.value })
-                              }
-                              style={styles.input}
-                            />
-                          </td>
-                          <td style={styles.td}>
-                            <input
-                              type="email"
-                              value={formData.email}
-                              onChange={(e) =>
-                                setFormData({ ...formData, email: e.target.value })
-                              }
-                              style={styles.input}
-                            />
-                          </td>
-                          <td style={styles.td}>
-                            <select
-                              value={formData.roleId}
-                              onChange={(e) =>
-                                setFormData({ ...formData, roleId: e.target.value })
-                              }
-                              style={styles.input}
-                            >
-                              <option value="SuperAdmin">SuperAdmin</option>
-                              <option value="Recepción">Recepción</option>
-                              <option value="Cliente">Cliente</option>
-                            </select>
-                          </td>
-                          <td style={styles.td}>
-                            <select
-                              value={formData.isActive ? 'true' : 'false'}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  isActive: e.target.value === 'true',
-                                })
-                              }
-                              style={styles.input}
-                            >
-                              <option value="true">Activo</option>
-                              <option value="false">Inactivo</option>
-                            </select>
-                          </td>
-                          <td style={styles.td}>
-                            <button
-                              onClick={() => handleUpdate(user.id)}
-                              style={styles.saveButton}
-                            >
-                              Guardar
-                            </button>
-                            <button
-                              onClick={handleCancel}
-                              style={styles.cancelButton}
-                            >
-                              Cancelar
-                            </button>
-                          </td>
-                        </>
-                      ) : (
-                        <>
-                          <td style={styles.td}>{user.name}</td>
-                          <td style={styles.td}>{user.email}</td>
-                          <td style={styles.td}>
-                            <span style={getRoleBadgeStyle(user.role?.name)}>
-                              {user.role?.name || 'N/A'}
-                            </span>
-                          </td>
-                          <td style={styles.td}>
-                            <span
-                              style={{
-                                ...styles.statusBadge,
-                                ...(user.isActive
-                                  ? styles.activeBadge
-                                  : styles.inactiveBadge),
-                              }}
-                            >
-                              {user.isActive ? 'Activo' : 'Inactivo'}
-                            </span>
-                          </td>
-                          <td style={styles.td}>
-                            <button
-                              onClick={() => handleEdit(user)}
-                              style={styles.editButton}
-                            >
-                              Editar
-                            </button>
-                            <button
-                              onClick={() => handleDelete(user.id)}
-                              style={styles.deleteButton}
-                            >
-                              Eliminar
-                            </button>
-                          </td>
-                        </>
-                      )}
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+          <div className="flex gap-2">
+            <Button size="sm" variant="secondary" icon={<Pencil size={14} />} onClick={() => handleEdit(user)}>
+              Editar
+            </Button>
+            <Button size="sm" variant="danger" icon={<Trash size={14} />} onClick={() => handleDelete(user.id)}>
+              Eliminar
+            </Button>
           </div>
-        )}
-      </div>
+        ),
+    },
+  ]
+
+  return (
+    <ProtectedRoute>
+      <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-widest text-copper-500">Administración</p>
+          <h1 className="mt-2 font-display text-4xl text-ink-900">Gestión de usuarios</h1>
+          <p className="mt-2 text-ink-500 max-w-2xl">
+            Edita roles, estados y mantén actualizadas las cuentas internas del hotel.
+          </p>
+        </div>
+        <Button variant="secondary" onClick={fetchUsers}>
+          Actualizar
+        </Button>
+      </header>
+
+      {error && (
+        <div className="mb-6 p-4 bg-[#F5DDDB] text-danger-500 text-sm rounded-md border border-danger-500/20">
+          {error}
+        </div>
+      )}
+
+      {loading ? (
+        <div className="text-center text-ink-500 py-12">Cargando usuarios...</div>
+      ) : users.length === 0 ? (
+        <EmptyState
+          icon={<UsersIcon size={20} />}
+          title="Sin usuarios"
+          description="Aún no hay usuarios registrados en el sistema."
+        />
+      ) : (
+        <Table columns={columns} data={users} />
+      )}
     </ProtectedRoute>
   )
-}
-
-function getRoleBadgeStyle(role?: string) {
-  const colors: Record<string, React.CSSProperties> = {
-    SuperAdmin: {
-      backgroundColor: '#7f1d1d',
-      color: '#fca5a5',
-      padding: '0.25rem 0.75rem',
-      borderRadius: '0.375rem',
-      fontSize: '0.875rem',
-      fontWeight: 'bold',
-    },
-    Recepción: {
-      backgroundColor: '#1e3a8a',
-      color: '#bfdbfe',
-      padding: '0.25rem 0.75rem',
-      borderRadius: '0.375rem',
-      fontSize: '0.875rem',
-      fontWeight: 'bold',
-    },
-    Cliente: {
-      backgroundColor: '#15803d',
-      color: '#86efac',
-      padding: '0.25rem 0.75rem',
-      borderRadius: '0.375rem',
-      fontSize: '0.875rem',
-      fontWeight: 'bold',
-    },
-  }
-  return colors[role || 'Cliente'] || colors.Cliente
-}
-
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    maxWidth: '1200px',
-    margin: '0 auto',
-    padding: '2rem',
-  },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '2rem',
-  },
-  subtitle: {
-    fontSize: '0.875rem',
-    color: '#64748b',
-    marginTop: '0.5rem',
-  },
-  refreshButton: {
-    padding: '0.5rem 1rem',
-    backgroundColor: '#3b82f6',
-    color: 'white',
-    border: 'none',
-    borderRadius: '0.375rem',
-    cursor: 'pointer',
-    fontSize: '0.875rem',
-  },
-  errorBox: {
-    padding: '1rem',
-    marginBottom: '2rem',
-    backgroundColor: '#fee2e2',
-    color: '#991b1b',
-    borderRadius: '0.375rem',
-    border: '1px solid #fca5a5',
-  },
-  loadingBox: {
-    padding: '2rem',
-    textAlign: 'center' as const,
-    color: '#64748b',
-  },
-  tableContainer: {
-    overflowX: 'auto' as const,
-  },
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse' as const,
-    backgroundColor: '#ffffff',
-    borderRadius: '0.5rem',
-    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-  },
-  headerRow: {
-    backgroundColor: '#1e293b',
-    color: 'white',
-  },
-  th: {
-    padding: '1rem',
-    textAlign: 'left' as const,
-    fontWeight: 'bold',
-    borderBottom: '2px solid #e2e8f0',
-  },
-  bodyRow: {
-    borderBottom: '1px solid #e2e8f0',
-  },
-  td: {
-    padding: '1rem',
-  },
-  input: {
-    width: '100%',
-    padding: '0.5rem',
-    border: '1px solid #cbd5e1',
-    borderRadius: '0.375rem',
-    fontSize: '0.875rem',
-  },
-  editButton: {
-    padding: '0.5rem 1rem',
-    marginRight: '0.5rem',
-    backgroundColor: '#3b82f6',
-    color: 'white',
-    border: 'none',
-    borderRadius: '0.375rem',
-    cursor: 'pointer',
-    fontSize: '0.875rem',
-  },
-  deleteButton: {
-    padding: '0.5rem 1rem',
-    backgroundColor: '#ef4444',
-    color: 'white',
-    border: 'none',
-    borderRadius: '0.375rem',
-    cursor: 'pointer',
-    fontSize: '0.875rem',
-  },
-  saveButton: {
-    padding: '0.5rem 1rem',
-    marginRight: '0.5rem',
-    backgroundColor: '#10b981',
-    color: 'white',
-    border: 'none',
-    borderRadius: '0.375rem',
-    cursor: 'pointer',
-    fontSize: '0.875rem',
-  },
-  cancelButton: {
-    padding: '0.5rem 1rem',
-    backgroundColor: '#6b7280',
-    color: 'white',
-    border: 'none',
-    borderRadius: '0.375rem',
-    cursor: 'pointer',
-    fontSize: '0.875rem',
-  },
-  statusBadge: {
-    padding: '0.25rem 0.75rem',
-    borderRadius: '0.375rem',
-    fontSize: '0.875rem',
-    fontWeight: 'bold',
-  },
-  activeBadge: {
-    backgroundColor: '#d1fae5',
-    color: '#065f46',
-  },
-  inactiveBadge: {
-    backgroundColor: '#fee2e2',
-    color: '#991b1b',
-  },
-  emptyCell: {
-    padding: '2rem',
-    textAlign: 'center' as const,
-    color: '#64748b',
-  },
 }
