@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react'
 import ProtectedRoute from '../components/ProtectedRoute'
 import ClientSearchInput, { ClientOption } from '../components/ClientSearchInput'
 import { api } from '../lib/api'
+import { Users } from '../components/icons'
+import { Avatar, Badge, Button, Card, EmptyState, Input, Table } from '../components/ui'
+import type { Column } from '../components/ui'
 
 type ClientRecord = {
 	id: number
@@ -69,177 +72,141 @@ export default function ClientsPage() {
 		}
 	}
 
+	const columns: Column<ClientRecord>[] = [
+		{
+			key: 'avatar',
+			header: '',
+			render: (c) => <Avatar name={c.name} size="sm" />,
+			className: 'w-12',
+		},
+		{
+			key: 'name',
+			header: 'Nombre',
+			render: (c) => <span className="font-medium text-ink-900">{c.name}</span>,
+		},
+		{
+			key: 'identificationNumber',
+			header: 'Documento',
+			render: (c) => <span className="text-ink-700">{c.identificationNumber || '—'}</span>,
+		},
+		{
+			key: 'email',
+			header: 'Correo',
+			render: (c) => <span className="text-ink-500">{c.email}</span>,
+		},
+		{
+			key: 'phone',
+			header: 'Teléfono',
+			render: (c) => <span className="text-ink-500">{c.phone || '—'}</span>,
+		},
+		{
+			key: 'portal',
+			header: 'Portal',
+			render: (c) => (
+				<Badge tone={c.userId ? 'success' : 'neutral'}>
+					{c.userId ? 'Con acceso' : 'Sin acceso'}
+				</Badge>
+			),
+		},
+	]
+
 	return (
 		<ProtectedRoute requiredRoles={['SuperAdmin', 'Recepción']}>
-			<header style={styles.header}>
-				<p style={styles.kicker}>Gestión de clientes</p>
-				<h1 style={styles.title}>Registro y Portal de Huéspedes</h1>
+			<header className="mb-8">
+				<p className="text-xs font-medium uppercase tracking-widest text-copper-500">Huéspedes</p>
+				<h1 className="mt-2 font-display text-4xl text-ink-900">Clientes</h1>
+				<p className="mt-2 text-ink-500 max-w-2xl">
+					Registro y portal de huéspedes. Busca por nombre o documento y administra los accesos.
+				</p>
 			</header>
 
 			{temporaryPassword && (
-				<div style={styles.tempPasswordBox}>
-					Contraseña temporal (se muestra una sola vez): <strong>{temporaryPassword}</strong>
+				<div className="mb-6 p-4 bg-[#F5E9D9] text-warning-500 text-sm rounded-md border border-warning-500/20">
+					Contraseña temporal (se muestra una sola vez): <strong className="ml-1">{temporaryPassword}</strong>
 				</div>
 			)}
 
-			{error && <div style={styles.error}>{error}</div>}
+			{error && (
+				<div className="mb-6 p-4 bg-[#F5DDDB] text-danger-500 text-sm rounded-md border border-danger-500/20">
+					{error}
+				</div>
+			)}
 
-			<section style={styles.section}>
-				<h2 style={styles.sectionTitle}>Buscar cliente</h2>
-				<ClientSearchInput onSelect={setSelectedClient} />
+			<section className="mb-6">
+				<h2 className="font-display text-2xl text-ink-900 mb-3">Buscar cliente</h2>
+				<div className="max-w-md">
+					<ClientSearchInput onSelect={setSelectedClient} />
+				</div>
 				{selectedClient && (
-					<p style={styles.selectedClient}>
-						Seleccionado: {selectedClient.name} - {selectedClient.identificationNumber}
+					<p className="mt-3 text-sm text-ink-700">
+						Seleccionado: <span className="font-medium text-ink-900">{selectedClient.name}</span>
+						<span className="text-ink-500"> · {selectedClient.identificationNumber}</span>
 					</p>
 				)}
 			</section>
 
-			<section style={styles.section}>
-				<h2 style={styles.sectionTitle}>Crear cliente</h2>
-				<form onSubmit={handleCreate} style={styles.formGrid}>
-					<input
-						placeholder="Nombre"
-						value={form.name}
-						onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-						required
-						style={styles.input}
-					/>
-					<input
-						placeholder="Correo"
-						type="email"
-						value={form.email}
-						onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
-						required
-						style={styles.input}
-					/>
-					<input
-						placeholder="Teléfono"
-						value={form.phone}
-						onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value }))}
-						style={styles.input}
-					/>
-					<input
-						placeholder="Documento"
-						value={form.identificationNumber}
-						onChange={(e) => setForm((prev) => ({ ...prev, identificationNumber: e.target.value }))}
-						required
-						style={styles.input}
-					/>
-					<label style={styles.checkboxLabel}>
-						<input
-							type="checkbox"
-							checked={form.givePortalAccess}
-							onChange={(e) => setForm((prev) => ({ ...prev, givePortalAccess: e.target.checked }))}
+			<section className="mb-8">
+				<h2 className="font-display text-2xl text-ink-900 mb-3">Crear cliente</h2>
+				<Card>
+					<form onSubmit={handleCreate} className="grid gap-4 sm:grid-cols-2">
+						<Input
+							label="Nombre"
+							placeholder="Nombre completo"
+							value={form.name}
+							onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+							required
 						/>
-						Dar acceso al portal
-					</label>
-					<button type="submit" disabled={loading} style={styles.button}>
-						{loading ? 'Guardando...' : 'Crear cliente'}
-					</button>
-				</form>
+						<Input
+							label="Correo"
+							type="email"
+							placeholder="correo@ejemplo.com"
+							value={form.email}
+							onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
+							required
+						/>
+						<Input
+							label="Teléfono"
+							placeholder="Opcional"
+							value={form.phone}
+							onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value }))}
+						/>
+						<Input
+							label="Documento"
+							placeholder="Número de identificación"
+							value={form.identificationNumber}
+							onChange={(e) => setForm((prev) => ({ ...prev, identificationNumber: e.target.value }))}
+							required
+						/>
+						<label className="flex items-center gap-2 text-sm text-ink-700 sm:col-span-2">
+							<input
+								type="checkbox"
+								checked={form.givePortalAccess}
+								onChange={(e) => setForm((prev) => ({ ...prev, givePortalAccess: e.target.checked }))}
+								className="h-4 w-4 rounded border-sand-200 text-ink-900 focus:ring-ink-900/10"
+							/>
+							Dar acceso al portal
+						</label>
+						<div className="sm:col-span-2 flex justify-end">
+							<Button type="submit" loading={loading}>
+								Crear cliente
+							</Button>
+						</div>
+					</form>
+				</Card>
 			</section>
 
-			<section style={styles.section}>
-				<h2 style={styles.sectionTitle}>Listado de clientes</h2>
-				<div style={styles.tableWrap}>
-					<table style={styles.table}>
-						<thead>
-							<tr>
-								<th style={styles.th}>Nombre</th>
-								<th style={styles.th}>Documento</th>
-								<th style={styles.th}>Correo</th>
-								<th style={styles.th}>Portal</th>
-							</tr>
-						</thead>
-						<tbody>
-							{clients.length === 0 ? (
-								<tr>
-									<td colSpan={4} style={styles.emptyCell}>
-										No hay clientes registrados.
-									</td>
-								</tr>
-							) : (
-								clients.map((client) => (
-									<tr key={client.id}>
-										<td style={styles.td}>{client.name}</td>
-										<td style={styles.td}>{client.identificationNumber}</td>
-										<td style={styles.td}>{client.email}</td>
-										<td style={styles.td}>{client.userId ? 'Con acceso' : 'Sin acceso'}</td>
-									</tr>
-								))
-							)}
-						</tbody>
-					</table>
-				</div>
+			<section>
+				<h2 className="font-display text-2xl text-ink-900 mb-3">Listado de clientes</h2>
+				{clients.length === 0 ? (
+					<EmptyState
+						icon={<Users size={20} />}
+						title="Sin clientes"
+						description="Cuando registres un cliente aparecerá aquí."
+					/>
+				) : (
+					<Table columns={columns} data={clients} />
+				)}
 			</section>
 		</ProtectedRoute>
 	)
 }
-
-const styles = {
-	header: { marginBottom: '1rem' },
-	kicker: {
-		margin: 0,
-		color: '#64748b',
-		textTransform: 'uppercase' as const,
-		fontSize: '0.8rem',
-		letterSpacing: '0.08em',
-		fontWeight: 700,
-	},
-	title: { margin: '0.45rem 0 0 0', color: '#0f172a' },
-	tempPasswordBox: {
-		marginBottom: '1rem',
-		border: '1px solid #f59e0b',
-		backgroundColor: '#fffbeb',
-		borderRadius: '8px',
-		padding: '0.8rem',
-		color: '#92400e',
-	},
-	error: {
-		marginBottom: '1rem',
-		border: '1px solid #fecaca',
-		backgroundColor: '#fef2f2',
-		borderRadius: '8px',
-		padding: '0.8rem',
-		color: '#b91c1c',
-	},
-	section: {
-		border: '1px solid #e2e8f0',
-		backgroundColor: '#fff',
-		borderRadius: '10px',
-		padding: '1rem',
-		marginBottom: '1rem',
-	},
-	sectionTitle: { marginTop: 0, color: '#0f172a', fontSize: '1rem' },
-	selectedClient: { color: '#1d4ed8', fontSize: '0.9rem', marginTop: '0.6rem' },
-	formGrid: {
-		display: 'grid',
-		gap: '0.6rem',
-	},
-	input: {
-		border: '1px solid #d1d5db',
-		borderRadius: '8px',
-		padding: '0.6rem 0.8rem',
-	},
-	checkboxLabel: {
-		display: 'flex',
-		alignItems: 'center',
-		gap: '0.5rem',
-		color: '#334155',
-		fontSize: '0.92rem',
-	},
-	button: {
-		border: 'none',
-		borderRadius: '8px',
-		padding: '0.65rem 0.9rem',
-		backgroundColor: '#1d4ed8',
-		color: '#fff',
-		fontWeight: 700,
-		cursor: 'pointer',
-	},
-	tableWrap: { overflowX: 'auto' as const },
-	table: { width: '100%', borderCollapse: 'collapse' as const },
-	th: { textAlign: 'left' as const, borderBottom: '1px solid #e2e8f0', padding: '0.5rem' },
-	td: { borderBottom: '1px solid #f1f5f9', padding: '0.5rem' },
-	emptyCell: { padding: '1rem', textAlign: 'center' as const, color: '#64748b' },
-} as const

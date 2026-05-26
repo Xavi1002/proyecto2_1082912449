@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { api } from '../lib/api'
+import { Input } from './ui'
+import { Search } from './icons'
 
 export type ClientOption = {
   id: number
@@ -56,8 +58,8 @@ export default function ClientSearchInput({ onSelect, placeholder = 'Buscar clie
   }, [query, hasQuery])
 
   return (
-    <div style={styles.wrapper}>
-      <input
+    <div className="relative">
+      <Input
         value={query}
         onChange={(event) => setQuery(event.target.value)}
         onFocus={() => {
@@ -66,27 +68,27 @@ export default function ClientSearchInput({ onSelect, placeholder = 'Buscar clie
           }
         }}
         placeholder={placeholder}
-        style={styles.input}
+        leftIcon={<Search size={16} />}
       />
-      {loading && <div style={styles.hint}>Buscando...</div>}
+      {loading && <p className="mt-1.5 text-xs text-ink-500">Buscando...</p>}
       {open && (
-        <div style={styles.dropdown}>
+        <div className="absolute left-0 right-0 top-[calc(100%+4px)] z-20 max-h-72 overflow-y-auto bg-white border border-sand-200 rounded-xl shadow-paper">
           {results.length === 0 ? (
-            <div style={styles.empty}>Sin resultados</div>
+            <div className="px-3 py-3 text-sm text-ink-500">Sin resultados</div>
           ) : (
             results.map((client) => (
               <button
                 key={client.id}
                 type="button"
-                style={styles.option}
                 onClick={() => {
                   onSelect(client)
                   setQuery(`${client.name} - ${client.identificationNumber}`)
                   setOpen(false)
                 }}
+                className="w-full text-left px-3 py-2.5 border-b border-sand-100 last:border-0 hover:bg-sand-50 transition flex flex-col gap-0.5"
               >
-                <span style={styles.optionName}>{client.name}</span>
-                <span style={styles.optionDoc}>Doc: {client.identificationNumber}</span>
+                <span className="text-sm font-medium text-ink-900">{client.name}</span>
+                <span className="text-xs text-ink-500">Doc: {client.identificationNumber}</span>
               </button>
             ))
           )}
@@ -95,60 +97,3 @@ export default function ClientSearchInput({ onSelect, placeholder = 'Buscar clie
     </div>
   )
 }
-
-const styles = {
-  wrapper: {
-    position: 'relative' as const,
-  },
-  input: {
-    width: '100%',
-    border: '1px solid #d1d5db',
-    borderRadius: '8px',
-    padding: '0.65rem 0.8rem',
-    fontSize: '0.95rem',
-  },
-  hint: {
-    marginTop: '0.3rem',
-    fontSize: '0.8rem',
-    color: '#64748b',
-  },
-  dropdown: {
-    position: 'absolute' as const,
-    top: 'calc(100% + 4px)',
-    left: 0,
-    right: 0,
-    border: '1px solid #e2e8f0',
-    borderRadius: '8px',
-    backgroundColor: '#fff',
-    zIndex: 20,
-    boxShadow: '0 8px 30px rgba(15, 23, 42, 0.12)',
-    maxHeight: '280px',
-    overflowY: 'auto' as const,
-  },
-  empty: {
-    padding: '0.75rem',
-    color: '#64748b',
-    fontSize: '0.9rem',
-  },
-  option: {
-    width: '100%',
-    border: 'none',
-    borderBottom: '1px solid #f1f5f9',
-    backgroundColor: '#fff',
-    textAlign: 'left' as const,
-    padding: '0.65rem 0.75rem',
-    cursor: 'pointer',
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '0.15rem',
-  },
-  optionName: {
-    color: '#0f172a',
-    fontWeight: 600,
-    fontSize: '0.92rem',
-  },
-  optionDoc: {
-    color: '#64748b',
-    fontSize: '0.8rem',
-  },
-} as const
