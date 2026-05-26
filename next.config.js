@@ -1,12 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  webpack: (config, { isServer }) => {
-    if (isServer) {
-      config.externals = [...(config.externals || []), 'sequelize', 'pg', 'pg-hstore', 'sqlite3', 'bcryptjs']
-    }
-    return config
-  },
+  // Paquetes que Next debe mantener fuera del bundle del lado servidor
+  // PERO empaquetar en el deployment de la función serverless. Sin esto
+  // Vercel's NFT no los detecta y require() falla en runtime.
+  serverExternalPackages: ['sequelize', 'pg', 'pg-hstore', 'bcryptjs'],
 }
 
 module.exports = nextConfig
