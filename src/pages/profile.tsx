@@ -3,8 +3,7 @@ import ProtectedRoute from '../components/ProtectedRoute'
 import { api } from '../lib/api'
 import { useState } from 'react'
 import { useRouter } from 'next/router'
-
-const receptionRole = 'Recepci' + String.fromCharCode(243) + 'n'
+import { Avatar, Badge, Button, Card, Input } from '../components/ui'
 
 function ProfileContent() {
   const router = useRouter()
@@ -44,69 +43,70 @@ function ProfileContent() {
 
   return (
     <>
-      <div style={styles.container}>
-        <div style={styles.card}>
-          <h1>Mi perfil</h1>
-          {user ? (
-            <div style={styles.profileInfo}>
-              <div style={styles.infoGroup}>
-                <label>Nombre:</label>
-                <p>{user.name}</p>
-              </div>
-              <div style={styles.infoGroup}>
-                <label>Email:</label>
-                <p>{user.email}</p>
-              </div>
-              <div style={styles.infoGroup}>
-                <label>Rol:</label>
-                <p>{user.role}</p>
-              </div>
-              <div style={styles.roleDescription}>
-                {user.mustChangePassword && (
-                  <p>
-                    Debes cambiar tu contraseña temporal para continuar con acceso completo.
-                  </p>
-                )}
-                {user.role === 'SuperAdmin' && (
-                  <p>Tienes acceso total al sistema como administrador.</p>
-                )}
-                {user.role === receptionRole && (
-                  <p>Tienes acceso como personal de recepcion.</p>
-                )}
-                {user.role === 'Cliente' && (
-                  <p>Tienes acceso como cliente de la plataforma.</p>
-                )}
-              </div>
+      <header className="mb-8">
+        <p className="text-xs font-medium uppercase tracking-widest text-copper-500">Mi cuenta</p>
+        <h1 className="mt-2 font-display text-4xl text-ink-900">Perfil</h1>
+        <p className="mt-2 text-ink-500">Tus datos de acceso y cambio de contraseña.</p>
+      </header>
 
-              <form onSubmit={handleChangePassword} style={styles.passwordForm}>
-                <h3 style={styles.passwordTitle}>Cambiar contraseña</h3>
-                {message && <div style={styles.successBox}>{message}</div>}
-                {error && <div style={styles.errorBox}>{error}</div>}
-                <input
-                  type="password"
-                  placeholder="Contraseña actual"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  style={styles.input}
-                  required
-                />
-                <input
-                  type="password"
-                  placeholder="Nueva contraseña"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  style={styles.input}
-                  required
-                />
-                <button type="submit" style={styles.button} disabled={loading}>
-                  {loading ? 'Actualizando...' : 'Actualizar contraseña'}
-                </button>
-              </form>
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Datos */}
+        <Card padding="md" className="lg:col-span-1">
+          <div className="flex items-center gap-4 mb-6">
+            <Avatar name={user?.name || '·'} size="lg" />
+            <div>
+              <h2 className="font-display text-xl text-ink-900">{user?.name}</h2>
+              <p className="text-sm text-ink-500">{user?.email}</p>
             </div>
-          ) : (
-            <p>Cargando informacion del usuario...</p>
+          </div>
+          <div className="space-y-3 pt-4 border-t border-sand-200">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-ink-500">Rol</p>
+              <p className="text-sm text-ink-900 mt-1">{user?.role}</p>
+            </div>
+            {user?.mustChangePassword && (
+              <Badge tone="warning">Debes cambiar tu contraseña</Badge>
+            )}
+          </div>
+        </Card>
+
+        {/* Cambio de contraseña */}
+        <Card padding="md" className="lg:col-span-2">
+          <h2 className="font-display text-xl text-ink-900 mb-1">Cambiar contraseña</h2>
+          <p className="text-sm text-ink-500 mb-6">Mínimo 6 caracteres. La sesión actual se mantiene.</p>
+
+          {error && (
+            <div className="mb-4 px-3 py-2.5 bg-[#F5DDDB] border border-danger-500/30 rounded-md text-sm text-danger-500">
+              {error}
+            </div>
           )}
-        </div>
+          {message && (
+            <div className="mb-4 px-3 py-2.5 bg-[#E5F0EA] border border-success-500/30 rounded-md text-sm text-success-500">
+              {message}
+            </div>
+          )}
+
+          <form onSubmit={handleChangePassword} className="space-y-4">
+            <Input
+              label="Contraseña actual"
+              name="currentPassword"
+              type="password"
+              required
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+            />
+            <Input
+              label="Nueva contraseña"
+              name="newPassword"
+              type="password"
+              required
+              minLength={6}
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+            />
+            <Button type="submit" loading={loading}>Guardar cambios</Button>
+          </form>
+        </Card>
       </div>
     </>
   )
@@ -119,69 +119,3 @@ export default function Profile() {
     </ProtectedRoute>
   )
 }
-
-const styles = {
-  container: {
-    maxWidth: '600px',
-    margin: '2rem auto',
-    padding: '0 1rem',
-  },
-  card: {
-    backgroundColor: 'white',
-    borderRadius: '16px',
-    padding: '2rem',
-    boxShadow: '0 18px 45px rgba(18, 38, 63, 0.08)',
-  },
-  profileInfo: {
-    marginTop: '2rem',
-  },
-  infoGroup: {
-    marginBottom: '1.5rem',
-    paddingBottom: '1rem',
-    borderBottom: '1px solid #eee',
-  },
-  roleDescription: {
-    marginTop: '2rem',
-    padding: '1rem',
-    backgroundColor: '#e7f3ff',
-    borderRadius: '12px',
-    color: '#0066cc',
-  },
-  passwordForm: {
-    marginTop: '1.5rem',
-    display: 'grid',
-    gap: '0.6rem',
-  },
-  passwordTitle: {
-    margin: 0,
-    color: '#0f172a',
-  },
-  successBox: {
-    padding: '0.7rem',
-    border: '1px solid #bbf7d0',
-    borderRadius: '8px',
-    backgroundColor: '#f0fdf4',
-    color: '#166534',
-  },
-  errorBox: {
-    padding: '0.7rem',
-    border: '1px solid #fecaca',
-    borderRadius: '8px',
-    backgroundColor: '#fef2f2',
-    color: '#b91c1c',
-  },
-  input: {
-    padding: '0.65rem 0.8rem',
-    borderRadius: '8px',
-    border: '1px solid #d1d5db',
-  },
-  button: {
-    border: 'none',
-    borderRadius: '8px',
-    backgroundColor: '#1d4ed8',
-    color: '#fff',
-    fontWeight: 700,
-    padding: '0.65rem 0.8rem',
-    cursor: 'pointer',
-  },
-} as const
