@@ -54,7 +54,6 @@ export default function ReservationsPage() {
     byStatus: {} as Record<string, number>,
     totalRevenue: 0,
   })
-  const [refresh, setRefresh] = useState(0)
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [filter, setFilter] = useState('all')
   const [error, setError] = useState('')
@@ -62,7 +61,7 @@ export default function ReservationsPage() {
 
   useEffect(() => {
     fetchStatistics()
-  }, [refresh])
+  }, [])
 
   const fetchStatistics = async () => {
     try {
@@ -90,7 +89,7 @@ export default function ReservationsPage() {
 
   useEffect(() => {
     void fetchReservations()
-  }, [fetchReservations, refresh])
+  }, [fetchReservations])
 
   const tabs = [
     { value: 'all', label: 'Todas' },
@@ -204,8 +203,6 @@ export default function ReservationsPage() {
         <Table columns={columns} data={reservations} />
       )}
 
-      {/* refresh helper retained for parity with previous behaviour */}
-      <span hidden aria-hidden onClick={() => setRefresh((r) => r + 1)} />
     </ProtectedRoute>
   )
 }
