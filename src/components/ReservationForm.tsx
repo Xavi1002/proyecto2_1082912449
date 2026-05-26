@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import ClientSearchInput, { ClientOption } from './ClientSearchInput'
 import { api } from '../lib/api'
+import { Button, Input } from './ui'
+import { Check } from './icons'
 
 interface Room {
   id: number
@@ -131,16 +133,10 @@ export default function ReservationForm({ onSuccess, onCancel, allowClientSelect
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
-      {/* Header */}
-      <div>
-        <h2 className="text-3xl font-bold text-white">Nueva Reserva</h2>
-        <p className="text-slate-400 mt-2">Completa los detalles para crear una nueva reserva</p>
-      </div>
-
+    <form onSubmit={handleSubmit} className="space-y-6">
       {allowClientSelection && (
-        <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-lg p-6">
-          <h3 className="text-lg font-bold text-white mb-4">👤 Cliente</h3>
+        <div className="space-y-4">
+          <h2 className="font-display text-lg text-ink-900">Cliente</h2>
           <ClientSearchInput
             onSelect={(client) => {
               setSelectedClient(client)
@@ -148,126 +144,106 @@ export default function ReservationForm({ onSuccess, onCancel, allowClientSelect
             }}
           />
           {selectedClient && (
-            <p className="mt-3 text-sm text-primary-200">
-              Seleccionado: {selectedClient.name} - {selectedClient.identificationNumber}
+            <p className="text-sm text-ink-700">
+              Seleccionado: <span className="font-medium text-ink-900">{selectedClient.name}</span>
+              <span className="text-ink-500"> · {selectedClient.identificationNumber}</span>
             </p>
           )}
         </div>
       )}
 
-      {/* Error Alert */}
       {error && (
-        <div className="p-4 bg-red-500/20 border border-red-500/50 rounded-lg flex items-start space-x-3 animate-fade-in">
-          <svg className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
-          </svg>
-          <p className="text-red-300 text-sm">{error}</p>
+        <div className="p-4 bg-[#F5DDDB] text-danger-500 text-sm rounded-md border border-danger-500/20">
+          {error}
         </div>
       )}
 
-      {/* Fechas Section */}
-      <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-lg p-6">
-        <h3 className="text-lg font-bold text-white mb-4">📅 Fechas</h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label htmlFor="checkInDate" className="block text-sm font-medium text-slate-300 mb-2">
-              Fecha de Entrada *
-            </label>
-            <input
-              id="checkInDate"
-              type="date"
-              value={checkInDate}
-              onChange={(e) => setCheckInDate(e.target.value)}
-              min={today}
-              required
-              className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="checkOutDate" className="block text-sm font-medium text-slate-300 mb-2">
-              Fecha de Salida *
-            </label>
-            <input
-              id="checkOutDate"
-              type="date"
-              value={checkOutDate}
-              onChange={(e) => setCheckOutDate(e.target.value)}
-              min={checkInDate || today}
-              required
-              className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
-            />
-          </div>
+      <div className="space-y-4">
+        <h2 className="font-display text-lg text-ink-900">Fechas</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Input
+            id="checkInDate"
+            label="Fecha de entrada"
+            type="date"
+            value={checkInDate}
+            onChange={(e) => setCheckInDate(e.target.value)}
+            min={today}
+            required
+          />
+          <Input
+            id="checkOutDate"
+            label="Fecha de salida"
+            type="date"
+            value={checkOutDate}
+            onChange={(e) => setCheckOutDate(e.target.value)}
+            min={checkInDate || today}
+            required
+          />
         </div>
-
-        <div className="rounded-lg border border-white/15 bg-white/5 p-4 text-sm text-slate-200">
-          {searchLoading ? 'Actualizando habitaciones disponibles...' : 'Las habitaciones se actualizan automáticamente al cambiar las fechas.'}
-        </div>
+        <p className="text-xs text-ink-500">
+          {searchLoading
+            ? 'Actualizando habitaciones disponibles...'
+            : 'Las habitaciones se actualizan automáticamente al cambiar las fechas.'}
+        </p>
       </div>
 
-      {/* Rooms Selection */}
       {availableRooms.length > 0 && (
-        <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-lg p-6">
-          <h3 className="text-lg font-bold text-white mb-4">🛏️ Seleccionar Habitación</h3>
+        <div className="space-y-4">
+          <h2 className="font-display text-lg text-ink-900">Seleccionar habitación</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {availableRooms.map((room) => (
-              <div
-                key={room.id}
-                onClick={() => setSelectedRoomId(room.id)}
-                className={`p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 transform hover:scale-105 ${
-                  selectedRoomId === room.id
-                    ? 'border-primary-500 bg-primary-500/20'
-                    : 'border-white/20 bg-white/5 hover:border-white/40 hover:bg-white/10'
-                }`}
-              >
-                <p className="text-lg font-bold text-white mb-2">
-                  🚪 Habitación {room.roomNumber}
-                </p>
-                <div className="space-y-1 text-sm text-slate-300">
-                  <p>
-                    <span className="text-slate-400">Tipo:</span> {room.type}
+            {availableRooms.map((room) => {
+              const isSelected = selectedRoomId === room.id
+              return (
+                <button
+                  type="button"
+                  key={room.id}
+                  onClick={() => setSelectedRoomId(room.id)}
+                  className={`text-left p-4 rounded-xl border transition shadow-paper bg-white ${
+                    isSelected
+                      ? 'border-ink-900 ring-2 ring-ink-900/10'
+                      : 'border-sand-200 hover:border-ink-400'
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-ink-500">Habitación</p>
+                      <p className="font-display text-xl text-ink-900 mt-1">#{room.roomNumber}</p>
+                    </div>
+                    {isSelected && (
+                      <span className="text-copper-500"><Check size={18} /></span>
+                    )}
+                  </div>
+                  <div className="mt-3 space-y-1 text-sm text-ink-700">
+                    <p><span className="text-ink-500">Tipo:</span> {room.type}</p>
+                    <p><span className="text-ink-500">Capacidad:</span> {room.capacity} personas</p>
+                    <p><span className="text-ink-500">Precio/noche:</span> {formatCop(Number(room.pricePerNight))}</p>
+                  </div>
+                  <p className="mt-3 font-display text-lg text-ink-900">
+                    Total: {formatCop(Number(room.totalPrice))}
                   </p>
-                  <p>
-                    <span className="text-slate-400">Capacidad:</span> {room.capacity} personas
-                  </p>
-                  <p>
-                    <span className="text-slate-400">Precio/noche:</span> {formatCop(Number(room.pricePerNight))}
-                  </p>
-                </div>
-                <p className="text-xl font-bold text-primary-400 mt-3">
-                  Total: {formatCop(Number(room.totalPrice))}
-                </p>
-              </div>
-            ))}
+                </button>
+              )
+            })}
           </div>
         </div>
       )}
 
-      {/* Reservation Details */}
       {selectedRoomId && (
-        <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-lg p-6">
-          <h3 className="text-lg font-bold text-white mb-4">📝 Detalles de la Reserva</h3>
-
+        <div className="space-y-4">
+          <h2 className="font-display text-lg text-ink-900">Detalles de la reserva</h2>
           <div className="space-y-4">
+            <Input
+              id="numberOfGuests"
+              label="Número de huéspedes"
+              type="number"
+              value={numberOfGuests}
+              onChange={(e) => setNumberOfGuests(Math.max(1, parseInt(e.target.value) || 1))}
+              min={1}
+              required
+            />
             <div>
-              <label htmlFor="numberOfGuests" className="block text-sm font-medium text-slate-300 mb-2">
-                Número de Huéspedes *
-              </label>
-              <input
-                id="numberOfGuests"
-                type="number"
-                value={numberOfGuests}
-                onChange={(e) => setNumberOfGuests(Math.max(1, parseInt(e.target.value) || 1))}
-                min="1"
-                required
-                className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="specialRequests" className="block text-sm font-medium text-slate-300 mb-2">
-                Solicitudes Especiales
+              <label htmlFor="specialRequests" className="block text-sm font-medium text-ink-700 mb-1.5">
+                Solicitudes especiales
               </label>
               <textarea
                 id="specialRequests"
@@ -275,51 +251,33 @@ export default function ReservationForm({ onSuccess, onCancel, allowClientSelect
                 onChange={(e) => setSpecialRequests(e.target.value)}
                 placeholder="Ej: cuna, piso alto, desayuno adicional, etc."
                 rows={4}
-                className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all resize-none"
+                className="w-full px-3 py-2 bg-white border border-sand-200 rounded-md text-sm text-ink-900 placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-ink-900/10 focus:border-ink-900 transition resize-none"
               />
             </div>
-
-            {selectedRoom && nights > 0 && (
-              <div className="rounded-lg border border-primary-500/30 bg-primary-500/10 px-4 py-3 text-sm text-primary-100">
-                {nights} noches × {formatCop(Number(selectedRoom.pricePerNight))} = {formatCop(previewTotal)}
-              </div>
-            )}
           </div>
         </div>
       )}
 
-      {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <button
-          type="submit"
-          disabled={isLoading || !selectedRoomId}
-          className="flex-1 py-3 px-4 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 disabled:from-slate-600 disabled:to-slate-700 text-white font-bold rounded-lg transition-all duration-200 flex items-center justify-center space-x-2"
-        >
-          {isLoading ? (
-            <>
-              <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              <span>Confirmando...</span>
-            </>
-          ) : (
-            <>
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
-              </svg>
-              <span>Confirmar Reserva</span>
-            </>
-          )}
-        </button>
+      {selectedRoom && nights > 0 && (
+        <div className="border-t border-sand-200 pt-4 flex items-end justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-wide text-ink-500">Total</p>
+            <p className="text-sm text-ink-500 mt-1">
+              {nights} {nights === 1 ? 'noche' : 'noches'} × {formatCop(Number(selectedRoom.pricePerNight))}
+            </p>
+          </div>
+          <p className="font-display text-2xl text-ink-900">{formatCop(previewTotal)}</p>
+        </div>
+      )}
+
+      <div className="flex flex-col sm:flex-row gap-3 pt-2">
+        <Button type="submit" loading={isLoading} disabled={isLoading || !selectedRoomId}>
+          Confirmar reserva
+        </Button>
         {onCancel && (
-          <button
-            type="button"
-            onClick={onCancel}
-            className="flex-1 py-3 px-4 bg-slate-600/50 hover:bg-slate-600 text-white font-bold rounded-lg transition-all duration-200"
-          >
+          <Button type="button" variant="secondary" onClick={onCancel}>
             Cancelar
-          </button>
+          </Button>
         )}
       </div>
     </form>

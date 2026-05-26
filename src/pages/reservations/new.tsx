@@ -1,21 +1,22 @@
 import { useRouter } from 'next/router'
 import ProtectedRoute from '../../components/ProtectedRoute'
 import ReservationForm from '../../components/ReservationForm'
+import { Card } from '../../components/ui'
 
 export default function NewReservationPage() {
   const router = useRouter()
 
   return (
     <ProtectedRoute requiredRoles={['SuperAdmin', 'Recepción']}>
-      <header className="mb-6">
-        <p className="text-sm font-semibold uppercase tracking-wide text-hm-text-secondary">Operación de reservas</p>
-        <h1 className="mt-2 text-3xl font-bold text-hm-text-main">Nueva Reserva</h1>
-        <p className="mt-2 text-sm text-hm-text-secondary">
+      <header className="mb-8">
+        <p className="text-xs font-medium uppercase tracking-widest text-copper-500">Operación</p>
+        <h1 className="mt-2 font-display text-4xl text-ink-900">Nueva reserva</h1>
+        <p className="mt-2 text-ink-500 max-w-2xl">
           Selecciona un cliente, define las fechas y confirma la habitación disponible.
         </p>
       </header>
 
-      <section className="rounded-xl border border-hm-border bg-white p-6 shadow-sm">
+      <Card padding="lg">
         <ReservationForm
           allowClientSelection
           onSuccess={() => {
@@ -25,7 +26,7 @@ export default function NewReservationPage() {
             void router.push('/reservations')
           }}
         />
-      </section>
+      </Card>
     </ProtectedRoute>
   )
 }
