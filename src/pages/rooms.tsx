@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import NavBar from '../components/NavBar'
 import ProtectedRoute from '../components/ProtectedRoute'
 import RoomForm from '../components/RoomForm'
-import RoomList from '../components/RoomList'
+import RoomCard from '../components/RoomCard'
+import { Bed, Plus } from '../components/icons'
+import { Button, Tabs, EmptyState, Modal } from '../components/ui'
 import { api } from '../lib/api'
 import { useAuth } from '../lib/useAuth'
 
@@ -29,6 +30,10 @@ function RoomsContent() {
   const [editingRoom, setEditingRoom] = useState<Room | undefined>()
   const [statistics, setStatistics] = useState<RoomStatistics | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
+  const [rooms, setRooms] = useState<Room[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [statusFilter, setStatusFilter] = useState<string>('all')
 
   const canManageRooms = user?.role === 'SuperAdmin' || user?.role === receptionRole
 
@@ -40,14 +45,35 @@ function RoomsContent() {
     try {
       const response = await api.get('/rooms/statistics')
       setStatistics(response.data)
-    } catch (error) {
-      console.error('Error fetching room statistics:', error)
+    } catch (err) {
+      console.error('Error fetching room statistics:', err)
     }
   }
 
   useEffect(() => {
     fetchStatistics()
   }, [refreshKey])
+
+  useEffect(() => {
+    const fetchRooms = async () => {
+      try {
+        setIsLoading(true)
+        const params = new URLSearchParams()
+        if (statusFilter && statusFilter !== 'all') {
+          params.append('status', statusFilter)
+        }
+        const response = await api.get(`/rooms?${params.toString()}`)
+        setRooms(response.data.rooms || [])
+        setError('')
+      } catch (err: any) {
+        setError(err.response?.data?.error || 'No fue posible cargar las habitaciones')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchRooms()
+  }, [statusFilter, refreshKey])
 
   const openCreateForm = () => {
     setEditingRoom(undefined)
@@ -74,60 +100,106 @@ function RoomsContent() {
     setEditingRoom(undefined)
   }
 
+  const handleDelete = async (room: Room) => {
+    if (!room.id) return
+    const shouldDelete = window.confirm('Deseas eliminar esta habitacion?')
+    if (!shouldDelete) return
+
+    try {
+      await api.delete(`/rooms/${room.id}`)
+      setRooms((current) => current.filter((r) => r.id !== room.id))
+      handleDeleteSuccess()
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'No fue posible eliminar la habitacion')
+    }
+  }
+
+  const tabs = [
+    { value: 'all', label: 'Todas' },
+    { value: 'Disponible', label: 'Disponible' },
+    { value: 'Ocupada', label: 'Ocupada' },
+    { value: 'Mantenimiento', label: 'Mantenimiento' },
+  ]
+
   return (
     <>
-      <NavBar />
-      <main style={styles.page}>
-        <section style={styles.hero}>
-          <div>
-            <p style={styles.kicker}>CRUD de habitaciones</p>
-            <h1 style={styles.title}>Administra numero, tipo, estado y precio por noche</h1>
-            <p style={styles.subtitle}>
-              Consulta la disponibilidad actual y manten actualizada la oferta del hotel desde un solo modulo.
+      <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-widest text-copper-500">Inventario</p>
+          <h1 className="mt-2 font-display text-4xl text-ink-900">Habitaciones</h1>
+          <p className="mt-2 text-ink-500 max-w-2xl">
+            Consulta la disponibilidad actual y manten actualizada la oferta del hotel desde un solo modulo.
+          </p>
+        </div>
+        {canManageRooms && (
+          <Button variant="primary" icon={<Plus size={16} />} onClick={openCreateForm}>
+            Nueva habitación
+          </Button>
+        )}
+      </header>
+
+      {statistics && (
+        <section className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          <div className="bg-white border border-sand-200 rounded-xl shadow-paper p-4">
+            <p className="text-xs uppercase tracking-wide text-ink-500">Total</p>
+            <p className="font-display text-2xl text-ink-900 mt-1">{statistics.total}</p>
+          </div>
+          <div className="bg-white border border-sand-200 rounded-xl shadow-paper p-4">
+            <p className="text-xs uppercase tracking-wide text-ink-500">Precio promedio</p>
+            <p className="font-display text-2xl text-ink-900 mt-1">
+              {Number(statistics.averagePrice).toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })}
             </p>
           </div>
-
-          {canManageRooms ? (
-            <button type="button" onClick={openCreateForm} style={styles.createButton}>
-              Nueva habitacion
-            </button>
-          ) : null}
+          {Object.entries(statistics.byStatus).slice(0, 2).map(([status, count]) => (
+            <div key={status} className="bg-white border border-sand-200 rounded-xl shadow-paper p-4">
+              <p className="text-xs uppercase tracking-wide text-ink-500">{status}</p>
+              <p className="font-display text-2xl text-ink-900 mt-1">{count}</p>
+            </div>
+          ))}
         </section>
+      )}
 
-        {statistics ? (
-          <section style={styles.statsGrid}>
-            <div style={styles.statCard}>
-              <span style={styles.statLabel}>Total</span>
-              <strong style={styles.statValue}>{statistics.total}</strong>
-            </div>
-            <div style={styles.statCard}>
-              <span style={styles.statLabel}>Precio promedio</span>
-              <strong style={styles.statValue}>${Number(statistics.averagePrice).toFixed(2)}</strong>
-            </div>
-            {Object.entries(statistics.byStatus).map(([status, count]) => (
-              <div key={status} style={styles.statCard}>
-                <span style={styles.statLabel}>{status}</span>
-                <strong style={styles.statValue}>{count}</strong>
-              </div>
-            ))}
-          </section>
-        ) : null}
+      <div className="mb-6">
+        <Tabs items={tabs} active={statusFilter} onChange={setStatusFilter} />
+      </div>
 
-        {showForm ? (
-          <div style={styles.modalBackdrop}>
-            <div style={styles.modal}>
-              <RoomForm room={editingRoom} onSuccess={handleFormSuccess} onCancel={handleCancel} />
-            </div>
-          </div>
-        ) : null}
+      {error && (
+        <div className="mb-6 p-4 bg-[#F5DDDB] text-danger-500 text-sm rounded-md border border-danger-500/20">
+          {error}
+        </div>
+      )}
 
-        <RoomList
-          refreshKey={refreshKey}
-          canManageRooms={canManageRooms}
-          onEdit={canManageRooms ? handleEdit : undefined}
-          onDeleteSuccess={handleDeleteSuccess}
+      {isLoading ? (
+        <div className="text-center text-ink-500 py-12">Cargando habitaciones...</div>
+      ) : rooms.length === 0 ? (
+        <EmptyState
+          icon={<Bed size={20} />}
+          title="Sin habitaciones"
+          description="No hay habitaciones que coincidan con el filtro seleccionado."
         />
-      </main>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {rooms.map((room) => (
+            <RoomCard
+              key={room.id}
+              room={{
+                id: room.id as number,
+                roomNumber: room.roomNumber,
+                type: room.type,
+                pricePerNight: room.pricePerNight,
+                status: room.status,
+              }}
+              canManage={canManageRooms}
+              onEdit={canManageRooms ? () => handleEdit(room) : undefined}
+              onDelete={canManageRooms ? () => handleDelete(room) : undefined}
+            />
+          ))}
+        </div>
+      )}
+
+      <Modal open={showForm} onClose={handleCancel} title={editingRoom ? 'Editar habitación' : 'Nueva habitación'}>
+        <RoomForm room={editingRoom} onSuccess={handleFormSuccess} onCancel={handleCancel} />
+      </Modal>
     </>
   )
 }
@@ -139,88 +211,3 @@ export default function RoomsPage() {
     </ProtectedRoute>
   )
 }
-
-const styles = {
-  page: {
-    minHeight: 'calc(100vh - 72px)',
-    background: 'linear-gradient(180deg, #f4efe7 0%, #eef3f7 100%)',
-    padding: '2rem 1rem 3rem',
-  },
-  hero: {
-    maxWidth: '1200px',
-    margin: '0 auto 1.5rem',
-    display: 'flex',
-    justifyContent: 'space-between',
-    gap: '1rem',
-    alignItems: 'flex-end',
-    flexWrap: 'wrap' as const,
-  },
-  kicker: {
-    textTransform: 'uppercase' as const,
-    letterSpacing: '0.08em',
-    color: '#8d5f2c',
-    fontSize: '0.8rem',
-    fontWeight: 700,
-    margin: 0,
-  },
-  title: {
-    margin: '0.75rem 0',
-    color: '#162534',
-    maxWidth: '780px',
-  },
-  subtitle: {
-    margin: 0,
-    maxWidth: '760px',
-    color: '#556371',
-    lineHeight: 1.6,
-  },
-  createButton: {
-    border: 'none',
-    borderRadius: '999px',
-    padding: '0.95rem 1.4rem',
-    backgroundColor: '#163349',
-    color: 'white',
-    fontWeight: 700,
-    cursor: 'pointer',
-  },
-  statsGrid: {
-    maxWidth: '1200px',
-    margin: '0 auto 1.5rem',
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-    gap: '1rem',
-  },
-  statCard: {
-    backgroundColor: 'white',
-    borderRadius: '18px',
-    padding: '1.25rem',
-    boxShadow: '0 18px 45px rgba(18, 38, 63, 0.08)',
-  },
-  statLabel: {
-    display: 'block',
-    color: '#617181',
-    marginBottom: '0.5rem',
-  },
-  statValue: {
-    fontSize: '1.8rem',
-    color: '#162534',
-  },
-  modalBackdrop: {
-    position: 'fixed' as const,
-    inset: 0,
-    backgroundColor: 'rgba(12, 24, 35, 0.45)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '1rem',
-    zIndex: 1000,
-  },
-  modal: {
-    width: '100%',
-    maxWidth: '560px',
-    backgroundColor: 'white',
-    borderRadius: '24px',
-    padding: '1.5rem',
-    boxShadow: '0 25px 60px rgba(18, 38, 63, 0.18)',
-  },
-} as const
