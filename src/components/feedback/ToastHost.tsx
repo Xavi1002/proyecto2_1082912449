@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { AlertCircle, Check } from '../icons'
 
 type ToastTone = 'info' | 'success' | 'warning' | 'error'
 
@@ -8,14 +9,20 @@ type ToastItem = {
   tone: ToastTone
 }
 
-const toneStyles: Record<ToastTone, string> = {
-  info: 'border-sky-400/40 bg-sky-500/15 text-sky-50',
-  success: 'border-emerald-400/40 bg-emerald-500/15 text-emerald-50',
-  warning: 'border-amber-400/40 bg-amber-500/15 text-amber-50',
-  error: 'border-rose-400/40 bg-rose-500/15 text-rose-50',
-}
-
 let toastId = 0
+
+function ToastIcon({ tone }: { tone: ToastTone }) {
+  if (tone === 'success') {
+    return <Check size={18} className="text-success-500 shrink-0 mt-0.5" />
+  }
+  if (tone === 'error') {
+    return <AlertCircle size={18} className="text-danger-500 shrink-0 mt-0.5" />
+  }
+  if (tone === 'warning') {
+    return <AlertCircle size={18} className="text-warning-500 shrink-0 mt-0.5" />
+  }
+  return <AlertCircle size={18} className="text-ink-500 shrink-0 mt-0.5" />
+}
 
 export default function ToastHost() {
   const [toasts, setToasts] = useState<ToastItem[]>([])
@@ -50,13 +57,14 @@ export default function ToastHost() {
   }
 
   return (
-    <div className="fixed right-4 top-4 z-[2000] flex w-[min(92vw,22rem)] flex-col gap-3">
+    <div className="fixed right-4 bottom-4 z-[2000] flex w-[min(92vw,22rem)] flex-col gap-3">
       {toasts.map((toast) => (
         <div
           key={toast.id}
-          className={`rounded-2xl border px-4 py-3 shadow-2xl backdrop-blur ${toneStyles[toast.tone]}`}
+          className="bg-white border border-sand-200 rounded-md shadow-paper px-4 py-3 flex items-start gap-3"
         >
-          <p className="text-sm font-medium leading-6">{toast.message}</p>
+          <ToastIcon tone={toast.tone} />
+          <p className="text-sm text-ink-900 leading-6">{toast.message}</p>
         </div>
       ))}
     </div>
