@@ -1,4 +1,9 @@
 import { Sequelize } from 'sequelize'
+// Import explicito para que webpack/NFT detecte pg como dependencia estatica
+// del bundle del serverless function. Sequelize lo carga via require('pg')
+// dinamico que ni serverExternalPackages ni Vercel NFT atrapan, lo que
+// produce "Please install pg package manually" en runtime.
+import 'pg'
 
 // Conexion a Postgres (Supabase). En local lee de .env.local, en Vercel de la
 // integracion Vercel <-> Supabase. Si no hay envs, se construye una instancia
