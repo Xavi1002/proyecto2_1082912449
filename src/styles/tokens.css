@@ -1,0 +1,25 @@
+:root {
+  /* Sand (fondos y surfaces) */
+  --sand-50: #FAF7F2;
+  --sand-100: #F2EDE3;
+  --sand-200: #E8E1D5;
+
+  /* Ink (texto, marca) */
+  --ink-900: #1B2A4E;
+  --ink-700: #2F3F66;
+  --ink-500: #5B6788;
+  --ink-400: #8290AC;
+
+  /* Copper (acentos) */
+  --copper-500: #B8743D;
+  --copper-600: #9A5E2E;
+
+  /* Estados */
+  --success-500: #3E8E5A;
+  --warning-500: #B8843D;
+  --danger-500: #B0463E;
+
+  /* Fuentes (asignadas por next/font en _app.tsx) */
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}

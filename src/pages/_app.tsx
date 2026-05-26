@@ -1,13 +1,25 @@
+import '../styles/globals.css'
 import type { AppProps } from 'next/app'
 import { useRouter } from 'next/router'
-import { Inter } from 'next/font/google'
+import { Fraunces, Inter } from 'next/font/google'
 import { AuthProvider } from '../lib/useAuth'
 import { useAuth } from '../lib/useAuth'
 import AppLayout from '../components/layout/AppLayout'
 import ToastHost from '../components/feedback/ToastHost'
-import '../styles/globals.css'
 
-const inter = Inter({ subsets: ['latin'] })
+const fraunces = Fraunces({
+  subsets: ['latin'],
+  variable: '--font-display',
+  weight: ['400', '500', '600'],
+  display: 'swap',
+})
+
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-sans',
+  weight: ['400', '500', '600'],
+  display: 'swap',
+})
 
 type AppShellProps = Pick<AppProps, 'Component' | 'pageProps'>
 
@@ -30,11 +42,11 @@ function AppShell({ Component, pageProps }: AppShellProps) {
 
 export default function App({ Component, pageProps }: AppProps) {
   return (
-    <main className={inter.className}>
+    <div className={`${fraunces.variable} ${inter.variable}`}>
       <AuthProvider>
         <ToastHost />
         <AppShell Component={Component} pageProps={pageProps} />
       </AuthProvider>
-    </main>
+    </div>
   )
 }
