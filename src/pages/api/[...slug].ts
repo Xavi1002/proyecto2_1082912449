@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-import app from '@server/app'
+import app from '../../server/app'
 
 export const config = {
   api: {
